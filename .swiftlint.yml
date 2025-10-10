@@ -1,0 +1,184 @@
+# SwiftLint configuration for concordium-id-swift-sdk
+# Focus on readability, safety, and consistency.
+
+# Enable SwiftLint rules
+whitelist_rules:
+  - anyobject_protocol
+  - array_init
+  - attributes
+  - block_based_kvo
+  - class_delegate_protocol
+  - closure_end_indentation
+  - closure_parameter_position
+  - closure_spacing
+  - collection_alignment
+  - colon
+  - comma
+  - compiler_protocol_init
+  - conditional_returns_on_newline
+  - contains_over_first_not_nil
+  - control_statement
+  - discouraged_direct_init
+  - discouraged_object_literal
+  - discouraged_optional_boolean
+  - duplicate_imports
+  - dynamic_inline
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - explicit_enum_raw_value
+  - explicit_init
+  - explicit_self
+  - file_header
+  - file_length
+  - first_where
+  - flatmap_over_map_reduce
+  - forbidden_types
+  - force_try
+  - force_unwrapping
+  - identifier_name
+  - implicit_return
+  - implicit_getter
+  - inert_defer
+  - is_disjoint
+  - joined_default_parameter
+  - large_tuple
+  - last_where
+  - leading_whitespace
+  - legacy_random
+  - let_var_whitespace
+  - line_length
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - mark
+  - modifier_order
+  - multiline_arguments
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - nimble_operator
+  - no_extension_access_modifier
+  - no_grouping_extension
+  - number_separator
+  - operator_usage_whitespace
+  - optional_enum_case_matching
+  - overridden_super_call
+  - pattern_matching_keywords
+  - prefer_nimble
+  - prefer_zero_over_explicit_init
+  - private_action
+  - private_outlet
+  - private_unit_test
+  - prohibited_interface_builder
+  - prohibited_super_call
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+  - redundant_discardable_let
+  - redundant_nil_coalescing
+  - redundant_optional_initialization
+  - redundant_type_annotation
+  - required_enum_case
+  - return_arrow_whitespace
+  - shorthand_operator
+  - single_test_class
+  - sorted_first_last
+  - sorted_imports
+  - statement_position
+  - static_operator
+  - strict_fileprivate
+  - strong_iboutlet
+  - switch_case_alignment
+  - syntactic_sugar
+  - todo
+  - trailing_closure
+  - trailing_newline
+  - trailing_semicolon
+  - trailing_whitespace
+  - type_name
+  - unneeded_break_in_switch
+  - unneeded_parentheses_in_closure_argument
+  - unused_capture_list
+  - unused_closure_parameter
+  - unused_declaration
+  - unused_import
+  - vertical_parameter_alignment
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace
+  - void_return
+
+opt_in_rules:
+  - balanced_xctest_lifecycle
+  - closure_body_length
+  - collection_alignment
+  - conditional_returns_on_newline
+  - empty_collection_literal
+  - explicit_acl
+  - explicit_top_level_acl
+  - explicit_type_interface
+  - extension_access_modifier
+  - fatal_error_message
+  - file_name
+  - file_name_no_space
+  - file_types_order
+  - function_default_parameter_at_end
+  - function_parameter_count
+  - implicitly_unwrapped_optional
+  - legacy_multiple
+  - let_var_whitespace
+  - missing_docs
+  - multiline_arguments_brackets
+  - multiline_parameters_brackets
+  - no_magic_numbers
+  - prefer_self_type_over_type_of_self
+  - prefer_using_guard
+  - private_action
+  - private_subject
+  - redundant_self_in_closure
+  - toggle_bool
+  - unavailable_function
+  - yoda_condition
+
+# Rule configurations
+line_length:
+  warning: 130
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_interpolated_strings: true
+
+identifier_name:
+  min_length: 3
+  allowed_symbols: ['_']
+  excluded:
+    - id
+    - i
+    - j
+    - x
+    - y
+    - z
+
+file_length:
+  warning: 800
+  error: 1200
+  ignore_comment_only_lines: true
+
+function_parameter_count:
+  warning: 6
+  error: 8
+
+large_tuple:
+  warning: 3
+  error: 4
+
+implicit_return:
+  included:
+    - closure
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+reporter: xcode
+

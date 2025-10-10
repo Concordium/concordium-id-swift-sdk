@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show workspace contents
+        run: |
+          pwd
+          ls -la
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Resolve dependencies
+        run: swift package resolve --package-path ${{ github.workspace }}
+
+      - name: Lint (SwiftLint via SPM plugin)
+        run: swift build --target concordium-id-swift-sdk --build-tests --package-path ${{ github.workspace }}
+
+      - name: Build
+        run: swift build --configuration debug --package-path ${{ github.workspace }}
+
+      - name: Test
+        run: swift test --configuration debug --parallel --package-path ${{ github.workspace }}
+
