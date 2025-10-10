@@ -30,7 +30,7 @@ jobs:
         run: swift package resolve --package-path ${{ github.workspace }}
 
       - name: Lint (SwiftLint via SPM plugin)
-        run: swift build --target concordium-id-swift-sdk --build-tests --package-path ${{ github.workspace }}
+        run: swift build --build-tests --package-path ${{ github.workspace }}
 
       - name: Build
         run: swift build --configuration debug --package-path ${{ github.workspace }}
