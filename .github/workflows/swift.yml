@@ -24,7 +24,7 @@ jobs:
         run: swift package resolve
 
       - name: Lint (SwiftLint via SPM plugin)
-        run: swift build --target IDAppSDKiOS --build-tests
+        run: swift build --target concordium-id-swift-sdk --build-tests
 
       - name: Build
         run: swift build --configuration debug
