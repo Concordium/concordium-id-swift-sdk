@@ -107,37 +107,37 @@ whitelist_rules:
   - vertical_whitespace
   - void_return
 
-opt_in_rules:
-  - balanced_xctest_lifecycle
-  - closure_body_length
-  - collection_alignment
-  - conditional_returns_on_newline
-  - empty_collection_literal
-  - explicit_acl
-  - explicit_top_level_acl
-  - explicit_type_interface
-  - extension_access_modifier
-  - fatal_error_message
-  - file_name
-  - file_name_no_space
-  - file_types_order
-  - function_default_parameter_at_end
-  - function_parameter_count
-  - implicitly_unwrapped_optional
-  - legacy_multiple
-  - let_var_whitespace
-  - missing_docs
-  - multiline_arguments_brackets
-  - multiline_parameters_brackets
-  - no_magic_numbers
-  - prefer_self_type_over_type_of_self
-  - prefer_using_guard
-  - private_action
-  - private_subject
-  - redundant_self_in_closure
-  - toggle_bool
-  - unavailable_function
-  - yoda_condition
+#opt_in_rules:
+#  - balanced_xctest_lifecycle
+#  - closure_body_length
+#  - collection_alignment
+#  - conditional_returns_on_newline
+#  - empty_collection_literal
+#  - explicit_acl
+#  - explicit_top_level_acl
+#  - explicit_type_interface
+#  - extension_access_modifier
+#  - fatal_error_message
+#  - file_name
+#  - file_name_no_space
+#  - file_types_order
+#  - function_default_parameter_at_end
+#  - function_parameter_count
+#  - implicitly_unwrapped_optional
+#  - legacy_multiple
+#  - let_var_whitespace
+#  - missing_docs
+#  - multiline_arguments_brackets
+#  - multiline_parameters_brackets
+#  - no_magic_numbers
+#  - prefer_self_type_over_type_of_self
+#  - prefer_using_guard
+#  - private_action
+#  - private_subject
+#  - redundant_self_in_closure
+#  - toggle_bool
+#  - unavailable_function
+#  - yoda_condition
 
 # Rule configurations
 line_length:

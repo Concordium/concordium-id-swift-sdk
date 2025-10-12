@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import ConcordiumWalletCrypto
 
 public protocol CredentialSigner {
     func signCredentialTransaction(serialized: SerializedCredentialDeploymentDetails, signingKey: String) async throws -> SignedCredentialDeploymentTransaction
@@ -16,7 +17,7 @@ public struct SignedCredentialDeploymentTransaction {
 
 public final class ConcordiumIDAppSDK {
     public static let chainId: [Network: String] = [
-        .mainet: formatChainId(mainnet.genesisHash),
+        .mainnet: formatChainId(mainnet.genesisHash),
         .testnet: formatChainId(testnet.genesisHash)
     ]
 
@@ -32,7 +33,7 @@ public final class ConcordiumIDAppSDK {
             throw NSError(domain: "ConcordiumIDAppSDK", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid seed phrase"])
         }
         // Since ConcordiumHdWallet is not available here, we stub a deterministic derivation
-        let combined = "\(seed)|\(network.rawValue)|\(accountIndex)"
+        let combined = "\(seed)|\("network.rawValue")|\(accountIndex)"
         let publicKey = SHA256.hex(of: combined + "-pub")
         let signingKey = SHA256.hex(of: combined + "-sign")
         return CCDAccountKeyPair(publicKey: publicKey, signingKey: signingKey)
@@ -102,4 +103,3 @@ enum SHA256 {
         #endif
     }
 }
-

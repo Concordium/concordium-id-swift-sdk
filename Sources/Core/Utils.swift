@@ -1,13 +1,14 @@
 import Foundation
+import ConcordiumWalletCrypto
 
-public enum Network: String {
-    case mainet
-    case testnet
-}
-
+//public enum Network: String {
+//    case mainet
+//    case testnet
+//}
+public typealias Network = ConcordiumWalletCrypto.Network
 public func getNetworkConfiguration(_ net: Network) -> NetworkConfiguration {
     switch net {
-    case .mainet:
+    case .mainnet:
         return mainnet
     case .testnet:
         return testnet
