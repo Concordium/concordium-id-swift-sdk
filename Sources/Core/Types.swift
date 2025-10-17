@@ -1,4 +1,5 @@
 import Foundation
+import Concordium
 
 public struct CCDAccountKeyPair: Codable, Equatable {
     public let publicKey: String
@@ -96,6 +97,25 @@ public struct RecoverAccountRequestMessage: Codable, Equatable {
 public struct IDAppError: Codable, Equatable {
     public let code: IDAppErrorCode
     public let details: String?
+}
+
+// Real Concordium SDK types
+public struct CredentialDeploymentTransaction: Codable, Equatable {
+    public let unsignedCdi: Data
+    public let expiry: TransactionTime
+    public let randomness: Data
+    public let credential: CredentialDeploymentDetails
+}
+
+public struct SignedCredentialDeploymentTransaction: Codable, Equatable {
+    public let credentialDeploymentTransaction: CredentialDeploymentTransaction
+    public let signature: String
+    
+    public func serialize() throws -> Data {
+        // Serialize the transaction for submission
+        let encoder = JSONEncoder()
+        return try encoder.encode(self)
+    }
 }
 
 
