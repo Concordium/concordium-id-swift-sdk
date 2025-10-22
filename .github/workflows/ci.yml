@@ -2,6 +2,11 @@ name: CI
 
 on:
   push:
+    branches: [main, release**, feature**]
+  pull_request:
+    branches: ['**']
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
