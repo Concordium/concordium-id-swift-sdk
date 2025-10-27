@@ -23,6 +23,9 @@ let package = Package(
                 "MnemonicSwift"
             ],
             path: "Sources",
+            resources: [
+                .process("Assets")
+            ],
             plugins: [
                 .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLint")
             ]

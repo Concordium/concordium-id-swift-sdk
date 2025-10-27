@@ -20,7 +20,7 @@ public struct ConcordiumIDAppPoup: View {
     @State private var isProcessingCreate: Bool = false
     @State private var isProcessingRecover: Bool = false
 
-    public init(
+    private init(
         walletConnectUri: String? = nil,
         onCreateAccount: (() async -> Void)? = nil,
         onRecoverAccount: (() async -> Void)? = nil,
@@ -31,106 +31,443 @@ public struct ConcordiumIDAppPoup: View {
         self.onRecoverAccount = onRecoverAccount
         self.walletConnectSessionTopic = walletConnectSessionTopic
     }
+    
+    // Determine if we should show the Provide case (account creation/recovery flow)
+    private var shouldShowProvideCase: Bool {
+        return onCreateAccount != nil || onRecoverAccount != nil
+    }
 
     public var body: some View {
-        if isPresented {
-            popupBox
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { geo in
+            ZStack {
+                Color.white.ignoresSafeArea()
+                if shouldShowProvideCase {
+                    provideCasePopup
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else {
+                    popupBox
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Static Methods (JavaScript API Compatibility)
+    
+    /**
+     * Closes the popup.
+     * This method is used to dismiss the currently displayed popup.
+     */
+    public static func closePopup() {
+        // This would be handled by the presenting view controller
+        // In a real implementation, you might use a notification or delegate pattern
+        NotificationCenter.default.post(name: NSNotification.Name("ConcordiumIDAppPoupClose"), object: nil)
+    }
+    
+    /**
+     * Opens the ID App using a deep link.
+     * This method is used to redirect the user to the ID App on mobile devices.
+     */
+    public static func openIdapp(walletConnectMobileUrl: String, walletConnectDesktopUrl: String? = nil) {
+        if let url = URL(string: walletConnectMobileUrl) {
+            UIApplication.shared.open(url)
+        }
+    }
+    
+    /**
+     * Shows the QR code popup for wallet connection.
+     * This function creates a popup that prompts the user to scan a QR code for wallet connection.
+     */
+    public static func invokeIdAppDeepLinkPopup(walletConnectUri: String) -> ConcordiumIDAppPoup {
+        guard !walletConnectUri.isEmpty else {
+            fatalError("ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup() requires a valid walletConnectUri")
+        }
+        
+        return ConcordiumIDAppPoup(walletConnectUri: walletConnectUri)
+    }
+    
+    /**
+     * Shows the account creation/recovery popup.
+     * This function creates a popup that allows users to create new accounts or recover existing ones.
+     */
+    public static func invokeIdAppActionsPopup(
+        onCreateAccount: (() async -> Void)? = nil,
+        onRecoverAccount: (() async -> Void)? = nil,
+        walletConnectSessionTopic: String? = nil
+    ) -> ConcordiumIDAppPoup {
+        // Check if at least one of the handlers is provided
+        guard onCreateAccount != nil || onRecoverAccount != nil else {
+            fatalError("At least one of the handlers must be provided")
+        }
+        
+        // For account creation, walletConnectSessionTopic is required
+        if onCreateAccount != nil && walletConnectSessionTopic == nil {
+            fatalError("Wallet Connect's session.topic is required for account creation")
+        }
+        
+        return ConcordiumIDAppPoup(
+            onCreateAccount: onCreateAccount,
+            onRecoverAccount: onRecoverAccount,
+            walletConnectSessionTopic: walletConnectSessionTopic
+        )
+    }
+    
+    // MARK: - Provide Case (Account Creation/Recovery Flow)
+    private var provideCasePopup: some View {
+        VStack(spacing: 0) {
+            // Header with logo and close button
+            VStack(spacing: 16) {
+                HStack {
+                    Spacer()
+                    closeButton
+                }
+                
+                // Concordium Logo and Brand
+                VStack(spacing: 8) {
+                    concordiumLogo
+                    Text("CONCORDIUM")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.black)
+                }
+                
+                // Progress Steps for Provide Case
+                provideCaseStepHeader
+                
+                Divider()
+                
+                // Main Content
+                VStack(spacing: 32) {
+                    Text("Only once you've completed the ID Verification, choose your next step.")
+                        .font(.system(size: 16, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .foregroundColor(.black)
+                    
+                    // Action Buttons based on available handlers
+                    actionButtonsSection
+                    
+                    // Show authentication code only for account creation
+                    if onCreateAccount != nil {
+                        authenticationCodeSection
+                    }
+                }
+            }
+            .padding(20)
+            .background(Color.white)
+        }
+    }
+    
+    private var provideCaseStepHeader: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 0) {
+                stepView(title: "Connect /\nPair Apps", isActive: true)
+                connectingLine
+                stepView(title: "Complete ID\nVerification", isActive: true)
+                connectingLine
+                stepView(title: stepTitle, isActive: false)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    private var stepTitle: String {
+        if onCreateAccount != nil && onRecoverAccount != nil {
+            return "Create /\nRecover Account"
+        } else if onCreateAccount != nil {
+            return "Create Account"
+        } else {
+            return "Recover Account"
+        }
+    }
+    
+    private var actionButtonsSection: some View {
+        VStack(spacing: 12) {
+            // Create Account Button
+            if let onCreateAccount = onCreateAccount {
+                Button(action: { Task { await runCreate(onCreateAccount) } }) {
+                    Text(isProcessingCreate ? "⏳ Please wait" : "Create New Account")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Color(#colorLiteral(red: 0.0, green: 0.290, blue: 0.576, alpha: 1)))
+                        .cornerRadius(6)
+                }
+                .disabled(isProcessingCreate)
+            }
+            
+            // Recover Account Button/Link
+            if let onRecoverAccount = onRecoverAccount {
+                if onCreateAccount != nil {
+                    // Show as secondary link when both options are available
+                    HStack(spacing: 4) {
+                        Text("Already have an account?")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.black)
+                        
+                        Button(action: { Task { await runRecover(onRecoverAccount) } }) {
+                            Text("Recover")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)))
+                                .underline()
+                        }
+                        .disabled(isProcessingRecover)
+                    }
+                } else {
+                    // Show as primary button when only recovery is available
+                    Button(action: { Task { await runRecover(onRecoverAccount) } }) {
+                        Text(isProcessingRecover ? "⏳ Please wait" : "Recover Account")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Color.white)
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 2))
+                    }
+                    .disabled(isProcessingRecover)
+                }
+            }
+        }
+    }
+    
+    private var authenticationCodeSection: some View {
+        VStack(spacing: 16) {
+            Text("To Create an Account, match the code below in the [ID App]")
+                .font(.system(size: 13, weight: .semibold))
+                .multilineTextAlignment(.center)
+                .foregroundColor(.black)
+            
+            // Generate a random 4-character code with exact styling from JS
+            if let topic = walletConnectSessionTopic, !topic.isEmpty {
+                Text(String(topic.prefix(4)).uppercased())
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)))
+                    .frame(width: 86, height: 86)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white, Color(red: 0.933, green: 0.933, blue: 0.933)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(Circle().stroke(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)), lineWidth: 2.15))
+                    .clipShape(Circle())
+            } else {
+                Text("AUTH")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)))
+                    .frame(width: 86, height: 86)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white, Color(red: 0.933, green: 0.933, blue: 0.933)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(Circle().stroke(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)), lineWidth: 2.15))
+                    .clipShape(Circle())
+            }
         }
     }
 
     private var popupBox: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .center, spacing: 16) {
-                HStack { Spacer(); closeButton }
-                stepHeader
-                Divider()
-                Text("Please follow and complete the\naccount setup in [ID App].")
-                    .font(.system(size: 16, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                if let walletConnectUri {
-                    QRCodeView(text: "\("IDAPP_HOSTS.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
-                        .frame(width: 160, height: 160)
+            // Header with logo and close button
+            VStack(spacing: 16) {
+                HStack {
+                    Spacer()
+                    closeButton
                 }
-                openIDAppButton
-            }
-            .padding(24)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            if let topic = walletConnectSessionTopic, !topic.isEmpty {
+                
+                // Concordium Logo and Brand
                 VStack(spacing: 8) {
-                    Text("To Create an Account, match the code below in the [ID App]")
-                        .font(.system(size: 13, weight: .semibold))
-                        .multilineTextAlignment(.center)
-                    Text(String(topic.prefix(4)).uppercased())
-                        .font(.system(size: 20, weight: .bold))
-                        .frame(width: 86, height: 86)
-                        .overlay(Circle().stroke(Color(#colorLiteral(red: 0.066, green: 0.262, blue: 0.655, alpha: 1)), lineWidth: 2))
+                    concordiumLogo
+                    Text("CONCORDIUM")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.black)
                 }
-                .padding(16)
-                .frame(maxWidth: 330)
-                .background(Color(white: 0.95))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                
+                // Progress Steps
+                stepHeader
+                
+                // Main Content
+                VStack(spacing: 32) {
+                    Text("To activate a Concordium account please complete ID verification.")
+                        .font(.system(size: 16, weight: .bold))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.black)
+                    
+                    if let walletConnectUri {
+                        QRCodeView(text: "\("IDAPP_HOSTS.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
+                            .frame(width: 200, height: 200)
+                    }
+                    Button(action: {
+                        // Your action here
+                    }) {
+                        Text("Open {ID App}")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Color(#colorLiteral(red: 0.066, green: 0.262, blue: 0.655, alpha: 1)))
+                            .cornerRadius(8)
+                    }
+                    .frame(width: 320)
+                }
             }
-            Spacer()
+            .padding(20)
+            .background(Color.white)
+            
+            // Footer with App Store buttons
+            VStack(spacing: 16) {
+                Text("If you don't have {ID App}. Install the app then return back here to continue.")
+                    .font(.system(size: 13, weight: .regular))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.black)
+                
+                HStack(spacing: 12) {
+                    appStoreButton
+                    googlePlayButton
+                }
+            }
+            .padding(20)
+            .background(Color(red: 0.95, green: 0.95, blue: 0.95))
         }
-        .frame(alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var stepHeader: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                VStack {
-                    Circle().fill(Color(#colorLiteral(red: 0.066, green: 0.262, blue: 0.655, alpha: 1))).frame(width: 16, height: 16)
-                    Text("Connect /\n Pair Apps").font(.system(size: 11, weight: .bold)).multilineTextAlignment(.center)
+            HStack(alignment: .center, spacing: 0) {
+                stepView(title: "Download ID App", isActive: true)
+                connectingLine
+                stepView(title: "Complete ID\nVerification", isActive: false)
+                connectingLine
+                stepView(title: "Sign Transaction", isActive: false)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private func stepView(title: String, isActive: Bool) -> some View {
+        VStack(spacing: 6) {
+            Circle()
+                .strokeBorder(isActive ? Color.clear : Color.black, lineWidth: 1)
+                .background(
+                    Circle().fill(isActive ? Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)) : Color.clear)
+                )
+                .frame(width: 16, height: 16)
+
+            Text(title)
+                .font(.system(size: 11, weight: isActive ? .bold : .medium))
+                .multilineTextAlignment(.center)
+                .foregroundColor(isActive ? Color.black : Color.black.opacity(0.7))
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var connectingLine: some View {
+        // Align line with circle center visually
+        Rectangle()
+            .fill(Color.black.opacity(0.2))
+            .frame(height: 1)
+            .frame(maxWidth: 50)
+            .offset(y: -18)
+    }
+    
+    private var concordiumLogo: some View {
+        Group {
+            if let image = UIImage(named: "concordium_logo", in: Bundle.module, compatibleWith: nil) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 40, height: 40)
+            } else {
+                // Fallback to simple logo design
+                ZStack {
+                    Circle()
+                        .stroke(Color.black, lineWidth: 2)
+                        .frame(width: 32, height: 32)
+                    Circle()
+                        .fill(Color.black)
+                        .frame(width: 12, height: 12)
                 }
-                Rectangle().fill(Color.black.opacity(0.2)).frame(height: 1)
-                VStack {
-                    Circle().strokeBorder(Color.black, lineWidth: 1).frame(width: 16, height: 16)
-                    Text("Complete ID\nVerification").font(.system(size: 11, weight: .semibold)).multilineTextAlignment(.center)
+            }
+        }
+    }
+    
+    private var appStoreButton: some View {
+        Button(action: {
+            // Open App Store
+            if let url = URL(string: "https://apps.apple.com/app/concordium-id/id123456789") {
+                openURL(url)
+            }
+        }) {
+            Group {
+                if let image = UIImage(named: "appstore_logo", in: Bundle.module, compatibleWith: nil) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 40)
+                        .cornerRadius(8)
+                } else {
+                    // Fallback to text-based button
+                    HStack(spacing: 8) {
+                        Image(systemName: "apple.logo")
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Download on the\nApp Store")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(width: 120, height: 40)
+                    .background(Color.black)
+                    .cornerRadius(8)
                 }
-                Rectangle().fill(Color.black.opacity(0.2)).frame(height: 1)
-                VStack {
-                    Circle().strokeBorder(Color.black, lineWidth: 1).frame(width: 16, height: 16)
-                    Text(actionText).font(.system(size: 11, weight: .regular)).multilineTextAlignment(.center)
+            }
+        }
+    }
+    
+    private var googlePlayButton: some View {
+        Button(action: {
+            // Open Google Play Store
+            if let url = URL(string: "https://play.google.com/store/apps/details?id=com.concordium.id") {
+                openURL(url)
+            }
+        }) {
+            Group {
+                if let image = UIImage(named: "googleplay_logo", in: Bundle.module, compatibleWith: nil) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 40)
+                        .cornerRadius(8)
+                } else {
+                    // Fallback to text-based button
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                        Text("GET IT ON\nGoogle Play")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(width: 120, height: 40)
+                    .background(Color.black)
+                    .cornerRadius(8)
                 }
             }
         }
     }
 
-    private var openIDAppButton: some View {
-        VStack(spacing: 12) {
-            if let onCreateAccount {
-                Button(action: { Task { await runCreate(onCreateAccount) } }) {
-                    Text(isProcessingCreate ? "⏳ Please wait" : "Create New Account")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(#colorLiteral(red: 0.0, green: 0.290, blue: 0.576, alpha: 1)))
-                        .foregroundColor(.white)
-                        .cornerRadius(6)
-                }
-                .disabled(isProcessingCreate)
-            }
 
-            if let onRecoverAccount {
-                Button(action: { Task { await runRecover(onRecoverAccount) } }) {
-                    Text(isProcessingRecover ? "⏳ Please wait" : "Recover Account")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .foregroundColor(.black)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 2))
-                }
-                .disabled(isProcessingRecover)
-            }
-        }
-    }
+
 
     private var closeButton: some View {
-        Button(action: { isPresented = false }) {
+        Button(action: {
+            ConcordiumIDAppPoup.closePopup()
+            isPresented = false
+        }) {
             Text("×").font(.system(size: 24)).foregroundColor(.gray)
         }
         .accessibilityLabel(Text("Close"))
@@ -202,3 +539,67 @@ public struct QRCodeView: View {
         return nil
     }
 }
+
+// MARK: - Preview
+#if DEBUG
+struct ConcordiumIDAppPoup_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // QR Code Flow using static method
+            ZStack {
+                Color.gray.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(
+                    walletConnectUri: "wc:1234567890abcdef@2?relay-protocol=irn&symKey=abcdef1234567890"
+                )
+            }
+            .previewDisplayName("QR Code Flow")
+            
+            // Both Create and Recover Available using static method
+            ZStack {
+                Color.gray.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                ConcordiumIDAppPoup.invokeIdAppActionsPopup(
+                    onCreateAccount: {
+                        print("Create account tapped")
+                    },
+                    onRecoverAccount: {
+                        print("Recover account tapped")
+                    },
+                    walletConnectSessionTopic: "D323"
+                )
+            }
+            .previewDisplayName("Create & Recover")
+            
+            // Only Create Account using static method
+            ZStack {
+                Color.gray.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                ConcordiumIDAppPoup.invokeIdAppActionsPopup(
+                    onCreateAccount: {
+                        print("Create account tapped")
+                    },
+                    walletConnectSessionTopic: "B8A2"
+                )
+            }
+            .previewDisplayName("Create Only")
+            
+            // Only Recover Account using static method
+            ZStack {
+                Color.gray.opacity(0.3)
+                    .ignoresSafeArea()
+                
+                ConcordiumIDAppPoup.invokeIdAppActionsPopup(
+                    onRecoverAccount: {
+                        print("Recover account tapped")
+                    }
+                )
+            }
+            .previewDisplayName("Recover Only")
+        }
+    }
+}
+#endif
