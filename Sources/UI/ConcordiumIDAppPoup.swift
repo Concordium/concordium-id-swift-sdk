@@ -38,18 +38,15 @@ public struct ConcordiumIDAppPoup: View {
     }
 
     public var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.white.ignoresSafeArea()
-                if shouldShowProvideCase {
-                    provideCasePopup
-                        .frame(width: geo.size.width, height: geo.size.height)
-                } else {
-                    popupBox
-                        .frame(width: geo.size.width, height: geo.size.height)
-                }
+        VStack {
+            if shouldShowProvideCase {
+                provideCasePopup
+            } else {
+                popupBox
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(alignment: .top)
     }
     
     // MARK: - Static Methods (JavaScript API Compatibility)
@@ -116,19 +113,14 @@ public struct ConcordiumIDAppPoup: View {
     private var provideCasePopup: some View {
         VStack(spacing: 0) {
             // Header with logo and close button
+            HStack {
+                Spacer(minLength: 0)
+                closeButton
+            }
+            .padding()
             VStack(spacing: 16) {
-                HStack {
-                    Spacer()
-                    closeButton
-                }
-                
                 // Concordium Logo and Brand
-                VStack(spacing: 8) {
-                    concordiumLogo
-                    Text("CONCORDIUM")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.black)
-                }
+                concordiumLogo
                 
                 // Progress Steps for Provide Case
                 provideCaseStepHeader
@@ -153,8 +145,10 @@ public struct ConcordiumIDAppPoup: View {
                 }
             }
             .padding(20)
+            .padding(.top, -24)
             .background(Color.white)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity ,alignment: .top)
     }
     
     private var provideCaseStepHeader: some View {
@@ -162,7 +156,7 @@ public struct ConcordiumIDAppPoup: View {
             HStack(alignment: .center, spacing: 0) {
                 stepView(title: "Connect /\nPair Apps", isActive: true)
                 connectingLine
-                stepView(title: "Complete ID\nVerification", isActive: true)
+                stepView(title: "Complete ID \nVerification", isActive: true)
                 connectingLine
                 stepView(title: stepTitle, isActive: false)
             }
@@ -172,7 +166,7 @@ public struct ConcordiumIDAppPoup: View {
     
     private var stepTitle: String {
         if onCreateAccount != nil && onRecoverAccount != nil {
-            return "Create /\nRecover Account"
+            return "Create / Recover\nAccount"
         } else if onCreateAccount != nil {
             return "Create Account"
         } else {
@@ -230,9 +224,10 @@ public struct ConcordiumIDAppPoup: View {
     
     private var authenticationCodeSection: some View {
         VStack(spacing: 16) {
-            Text("To Create an Account, match the code below in the [ID App]")
+            Text("To Create an Account, match the code \n below in the [ID App]")
                 .font(.system(size: 13, weight: .semibold))
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
                 .foregroundColor(.black)
             
             // Generate a random 4-character code with exact styling from JS
@@ -266,33 +261,31 @@ public struct ConcordiumIDAppPoup: View {
                     .clipShape(Circle())
             }
         }
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
+        .background(Color(red: 0.95, green: 0.95, blue: 0.95))
+        .padding(.horizontal, -20)
     }
 
     private var popupBox: some View {
         VStack(spacing: 0) {
             // Header with logo and close button
+            HStack {
+                Spacer(minLength: 0)
+                closeButton
+            }
+            .padding()
             VStack(spacing: 16) {
-                HStack {
-                    Spacer()
-                    closeButton
-                }
-                
-                // Concordium Logo and Brand
-                VStack(spacing: 8) {
-                    concordiumLogo
-                    Text("CONCORDIUM")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.black)
-                }
+                concordiumLogo
                 
                 // Progress Steps
                 stepHeader
                 
                 // Main Content
                 VStack(spacing: 32) {
-                    Text("To activate a Concordium account please complete ID verification.")
+                    Text("Please follow and complete the \n account setup in [ID App].")
                         .font(.system(size: 16, weight: .bold))
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
                         .foregroundColor(.black)
                     
                     if let walletConnectUri {
@@ -311,8 +304,11 @@ public struct ConcordiumIDAppPoup: View {
                     }
                     .frame(width: 320)
                 }
+                .frame(maxHeight: .infinity)
             }
+            .frame(maxHeight: .infinity)
             .padding(20)
+            .padding(.top, -24)
             .background(Color.white)
             
             // Footer with App Store buttons
@@ -322,25 +318,26 @@ public struct ConcordiumIDAppPoup: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(.black)
                 
-                HStack(spacing: 12) {
+                HStack {
+                    Spacer(minLength: 0)
                     appStoreButton
-                    googlePlayButton
+                    Spacer(minLength: 0)
                 }
             }
             .padding(20)
             .background(Color(red: 0.95, green: 0.95, blue: 0.95))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var stepHeader: some View {
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 0) {
-                stepView(title: "Download ID App", isActive: true)
+                stepView(title: "Connect /\nPair Apps ", isActive: true)
                 connectingLine
                 stepView(title: "Complete ID\nVerification", isActive: false)
                 connectingLine
-                stepView(title: "Sign Transaction", isActive: false)
+                stepView(title: "Create / \n Recover Account", isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
@@ -355,13 +352,13 @@ public struct ConcordiumIDAppPoup: View {
                     Circle().fill(isActive ? Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)) : Color.clear)
                 )
                 .frame(width: 16, height: 16)
-
             Text(title)
                 .font(.system(size: 11, weight: isActive ? .bold : .medium))
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
                 .foregroundColor(isActive ? Color.black : Color.black.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .top) // maintain alignment
     }
 
     private var connectingLine: some View {
@@ -379,7 +376,7 @@ public struct ConcordiumIDAppPoup: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 200, height: 60)
             } else {
                 // Fallback to simple logo design
                 ZStack {
@@ -402,7 +399,7 @@ public struct ConcordiumIDAppPoup: View {
             }
         }) {
             Group {
-                if let image = UIImage(named: "appstore_logo", in: Bundle.module, compatibleWith: nil) {
+                if let image = UIImage(named: "app_store", in: Bundle.module, compatibleWith: nil) {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -426,49 +423,13 @@ public struct ConcordiumIDAppPoup: View {
             }
         }
     }
-    
-    private var googlePlayButton: some View {
-        Button(action: {
-            // Open Google Play Store
-            if let url = URL(string: "https://play.google.com/store/apps/details?id=com.concordium.id") {
-                openURL(url)
-            }
-        }) {
-            Group {
-                if let image = UIImage(named: "googleplay_logo", in: Bundle.module, compatibleWith: nil) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 120, height: 40)
-                        .cornerRadius(8)
-                } else {
-                    // Fallback to text-based button
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .foregroundColor(.white)
-                            .font(.system(size: 16, weight: .medium))
-                        Text("GET IT ON\nGoogle Play")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(width: 120, height: 40)
-                    .background(Color.black)
-                    .cornerRadius(8)
-                }
-            }
-        }
-    }
-
-
-
 
     private var closeButton: some View {
         Button(action: {
             ConcordiumIDAppPoup.closePopup()
             isPresented = false
         }) {
-            Text("×").font(.system(size: 24)).foregroundColor(.gray)
+            Text("x").font(.system(size: 24)).foregroundColor(.gray)
         }
         .accessibilityLabel(Text("Close"))
     }
