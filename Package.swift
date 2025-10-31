@@ -24,9 +24,6 @@ let package = Package(
             path: "Sources",
             resources: [
                 .process("Assets")
-            ],
-            plugins: [
-               .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLint")
             ]
         )
     ]
