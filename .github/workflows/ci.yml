@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: ['**']
     types: [opened, synchronize, reopened, ready_for_review]
+
 jobs:
   build-and-test:
     runs-on: macos-14
@@ -37,11 +38,11 @@ jobs:
             -configuration Debug \
             clean build
 
-     - name: Lint (SwiftLint via Xcode)
-       run: |
-         xcodebuild \
-           -scheme concordium-id-swift-sdk \
-           -destination 'generic/platform=iOS Simulator' \
-           -configuration Debug \
-           clean build \
-           -skipPackagePluginValidation NO
+      - name: Lint (SwiftLint via Xcode)
+        run: |
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build \
+            -skipPackagePluginValidation NO
