@@ -38,6 +38,11 @@ jobs:
             -configuration Debug \
             clean build
 
-      - name: Lint (SwiftLint via SPM)
+      - name: Lint (SwiftLint via Xcode)
         run: |
-          swift build --build-tests --skip-update
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build \
+            -skipPackagePluginValidation=NO
