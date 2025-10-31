@@ -31,7 +31,7 @@ public struct ConcordiumIDAppPoup: View {
         self.onRecoverAccount = onRecoverAccount
         self.walletConnectSessionTopic = walletConnectSessionTopic
     }
-    
+
     // Determine if we should show the Provide case (account creation/recovery flow)
     private var shouldShowProvideCase: Bool {
         return onCreateAccount != nil || onRecoverAccount != nil
@@ -39,18 +39,20 @@ public struct ConcordiumIDAppPoup: View {
 
     public var body: some View {
         VStack {
-            if shouldShowProvideCase {
-                provideCasePopup
-            } else {
-                popupBox
+            Group {
+                if shouldShowProvideCase {
+                    provideCasePopup
+                } else {
+                    popupBox
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .frame(alignment: .top)
     }
-    
+
     // MARK: - Static Methods (JavaScript API Compatibility)
-    
+
     /**
      * Closes the popup.
      * This method is used to dismiss the currently displayed popup.
@@ -60,7 +62,7 @@ public struct ConcordiumIDAppPoup: View {
         // In a real implementation, you might use a notification or delegate pattern
         NotificationCenter.default.post(name: NSNotification.Name("ConcordiumIDAppPoupClose"), object: nil)
     }
-    
+
     /**
      * Opens the ID App using a deep link.
      * This method is used to redirect the user to the ID App on mobile devices.
@@ -70,7 +72,7 @@ public struct ConcordiumIDAppPoup: View {
             UIApplication.shared.open(url)
         }
     }
-    
+
     /**
      * Shows the QR code popup for wallet connection.
      * This function creates a popup that prompts the user to scan a QR code for wallet connection.
@@ -82,7 +84,7 @@ public struct ConcordiumIDAppPoup: View {
         
         return ConcordiumIDAppPoup(walletConnectUri: walletConnectUri)
     }
-    
+
     /**
      * Shows the account creation/recovery popup.
      * This function creates a popup that allows users to create new accounts or recover existing ones.
@@ -96,37 +98,31 @@ public struct ConcordiumIDAppPoup: View {
         guard onCreateAccount != nil || onRecoverAccount != nil else {
             fatalError("At least one of the handlers must be provided")
         }
-        
+
         // For account creation, walletConnectSessionTopic is required
         if onCreateAccount != nil && walletConnectSessionTopic == nil {
             fatalError("Wallet Connect's session.topic is required for account creation")
         }
-        
+
         return ConcordiumIDAppPoup(
             onCreateAccount: onCreateAccount,
             onRecoverAccount: onRecoverAccount,
             walletConnectSessionTopic: walletConnectSessionTopic
         )
     }
-    
+
     // MARK: - Provide Case (Account Creation/Recovery Flow)
     private var provideCasePopup: some View {
         VStack(spacing: 0) {
             // Header with logo and close button
-            HStack {
-                Spacer(minLength: 0)
-                closeButton
-            }
-            .padding()
             VStack(spacing: 16) {
                 // Concordium Logo and Brand
                 concordiumLogo
-                
                 // Progress Steps for Provide Case
                 provideCaseStepHeader
-                
+
                 Divider()
-                
+
                 // Main Content
                 VStack(spacing: 32) {
                     Text("Only once you've completed the ID Verification, choose your next step.")
@@ -134,10 +130,10 @@ public struct ConcordiumIDAppPoup: View {
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .foregroundColor(.black)
-                    
+
                     // Action Buttons based on available handlers
                     actionButtonsSection
-                    
+
                     // Show authentication code only for account creation
                     if onCreateAccount != nil {
                         authenticationCodeSection
@@ -145,12 +141,15 @@ public struct ConcordiumIDAppPoup: View {
                 }
             }
             .padding(20)
-            .padding(.top, -24)
             .background(Color.white)
         }
+        .overlay(alignment: .topTrailing, content: {
+            closeButton
+                .padding([.top, .trailing], 32)
+        })
         .frame(maxWidth: .infinity, maxHeight: .infinity ,alignment: .top)
     }
-    
+
     private var provideCaseStepHeader: some View {
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 0) {
@@ -163,7 +162,7 @@ public struct ConcordiumIDAppPoup: View {
             .frame(maxWidth: .infinity)
         }
     }
-    
+
     private var stepTitle: String {
         if onCreateAccount != nil && onRecoverAccount != nil {
             return "Create / Recover\nAccount"
@@ -173,7 +172,7 @@ public struct ConcordiumIDAppPoup: View {
             return "Recover Account"
         }
     }
-    
+
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
             // Create Account Button
@@ -188,7 +187,7 @@ public struct ConcordiumIDAppPoup: View {
                 }
                 .disabled(isProcessingCreate)
             }
-            
+
             // Recover Account Button/Link
             if let onRecoverAccount = onRecoverAccount {
                 if onCreateAccount != nil {
@@ -221,7 +220,7 @@ public struct ConcordiumIDAppPoup: View {
             }
         }
     }
-    
+
     private var authenticationCodeSection: some View {
         VStack(spacing: 16) {
             Text("To Create an Account, match the code \n below in the [ID App]")
@@ -229,7 +228,7 @@ public struct ConcordiumIDAppPoup: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .foregroundColor(.black)
-            
+
             // Generate a random 4-character code with exact styling from JS
             if let topic = walletConnectSessionTopic, !topic.isEmpty {
                 Text(String(topic.prefix(4)).uppercased())
@@ -262,7 +261,7 @@ public struct ConcordiumIDAppPoup: View {
             }
         }
         .padding(.vertical, 20)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 0.95, green: 0.95, blue: 0.95))
         .padding(.horizontal, -20)
     }
@@ -270,17 +269,12 @@ public struct ConcordiumIDAppPoup: View {
     private var popupBox: some View {
         VStack(spacing: 0) {
             // Header with logo and close button
-            HStack {
-                Spacer(minLength: 0)
-                closeButton
-            }
-            .padding()
             VStack(spacing: 16) {
                 concordiumLogo
-                
+
                 // Progress Steps
                 stepHeader
-                
+
                 // Main Content
                 VStack(spacing: 32) {
                     Text("Please follow and complete the \n account setup in [ID App].")
@@ -305,19 +299,19 @@ public struct ConcordiumIDAppPoup: View {
                     .frame(width: 320)
                 }
                 .frame(maxHeight: .infinity)
+                .padding(.top, -67)
             }
             .frame(maxHeight: .infinity)
             .padding(20)
-            .padding(.top, -24)
             .background(Color.white)
-            
+
             // Footer with App Store buttons
             VStack(spacing: 16) {
                 Text("If you don't have {ID App}. Install the app then return back here to continue.")
                     .font(.system(size: 13, weight: .regular))
                     .multilineTextAlignment(.center)
                     .foregroundColor(.black)
-                
+
                 HStack {
                     Spacer(minLength: 0)
                     appStoreButton
@@ -327,6 +321,10 @@ public struct ConcordiumIDAppPoup: View {
             .padding(20)
             .background(Color(red: 0.95, green: 0.95, blue: 0.95))
         }
+        .overlay(alignment: .topTrailing, content: {
+            closeButton
+                .padding([.top, .trailing], 32)
+        })
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -369,7 +367,7 @@ public struct ConcordiumIDAppPoup: View {
             .frame(maxWidth: 50)
             .offset(y: -18)
     }
-    
+
     private var concordiumLogo: some View {
         Group {
             if let image = UIImage(named: "concordium_logo", in: Bundle.module, compatibleWith: nil) {
@@ -390,7 +388,7 @@ public struct ConcordiumIDAppPoup: View {
             }
         }
     }
-    
+
     private var appStoreButton: some View {
         Button(action: {
             // Open App Store
@@ -510,18 +508,18 @@ struct ConcordiumIDAppPoup_Previews: PreviewProvider {
             ZStack {
                 Color.gray.opacity(0.3)
                     .ignoresSafeArea()
-                
+
                 ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(
                     walletConnectUri: "wc:1234567890abcdef@2?relay-protocol=irn&symKey=abcdef1234567890"
                 )
             }
             .previewDisplayName("QR Code Flow")
-            
+
             // Both Create and Recover Available using static method
             ZStack {
                 Color.gray.opacity(0.3)
                     .ignoresSafeArea()
-                
+
                 ConcordiumIDAppPoup.invokeIdAppActionsPopup(
                     onCreateAccount: {
                         print("Create account tapped")
@@ -533,12 +531,12 @@ struct ConcordiumIDAppPoup_Previews: PreviewProvider {
                 )
             }
             .previewDisplayName("Create & Recover")
-            
+
             // Only Create Account using static method
             ZStack {
                 Color.gray.opacity(0.3)
                     .ignoresSafeArea()
-                
+
                 ConcordiumIDAppPoup.invokeIdAppActionsPopup(
                     onCreateAccount: {
                         print("Create account tapped")
@@ -547,12 +545,12 @@ struct ConcordiumIDAppPoup_Previews: PreviewProvider {
                 )
             }
             .previewDisplayName("Create Only")
-            
+
             // Only Recover Account using static method
             ZStack {
                 Color.gray.opacity(0.3)
                     .ignoresSafeArea()
-                
+
                 ConcordiumIDAppPoup.invokeIdAppActionsPopup(
                     onRecoverAccount: {
                         print("Recover account tapped")
