@@ -27,7 +27,7 @@ let package = Package(
                 .process("Assets")
             ],
             plugins: [
-               // .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLint")
+               .plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLint")
             ]
         )
     ]
