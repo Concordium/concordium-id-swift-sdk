@@ -4,8 +4,7 @@ import PackageDescription
 let package = Package(
     name: "concordium-id-swift-sdk",
     platforms: [
-        .iOS(.v16),
-        .macOS(.v13)
+        .iOS(.v16)
     ],
     products: [
         .library(name: "concordium-id-swift-sdk", targets: ["concordium-id-swift-sdk"])

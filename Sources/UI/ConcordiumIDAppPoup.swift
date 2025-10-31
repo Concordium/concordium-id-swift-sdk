@@ -374,5 +374,3 @@ public struct ConcordiumIDAppPoup: View {
         isProcessingRecover = false
     }
 }
-
-//
