@@ -7,7 +7,9 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+#if canImport(UIKit)
 import UIKit
+#endif
 
 public struct ConcordiumIDAppPoup: View {
     private let walletConnectUri: String?
