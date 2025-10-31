@@ -5,7 +5,6 @@
 //  Created by Lov  on 23/10/25.
 //
 
-
 import SwiftUI
 import CoreImage.CIFilterBuiltins
 
@@ -81,7 +80,7 @@ public struct ConcordiumIDAppPoup: View {
         guard !walletConnectUri.isEmpty else {
             fatalError("ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup() requires a valid walletConnectUri")
         }
-        
+
         return ConcordiumIDAppPoup(walletConnectUri: walletConnectUri)
     }
 
@@ -147,7 +146,7 @@ public struct ConcordiumIDAppPoup: View {
             closeButton
                 .padding([.top, .trailing], 32)
         })
-        .frame(maxWidth: .infinity, maxHeight: .infinity ,alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var provideCaseStepHeader: some View {
@@ -177,14 +176,14 @@ public struct ConcordiumIDAppPoup: View {
         VStack(spacing: 12) {
             // Create Account Button
             if let onCreateAccount = onCreateAccount {
-                Button(action: { Task { await runCreate(onCreateAccount) } }) {
+                Button(action: { Task { await runCreate(onCreateAccount) } }, label: {
                     Text(isProcessingCreate ? "⏳ Please wait" : "Create New Account")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(Color(#colorLiteral(red: 0.0, green: 0.290, blue: 0.576, alpha: 1)))
                         .cornerRadius(6)
-                }
+                })
                 .disabled(isProcessingCreate)
             }
 
@@ -196,25 +195,25 @@ public struct ConcordiumIDAppPoup: View {
                         Text("Already have an account?")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.black)
-                        
-                        Button(action: { Task { await runRecover(onRecoverAccount) } }) {
+
+                        Button(action: { Task { await runRecover(onRecoverAccount) } }, label: {
                             Text("Recover")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)))
                                 .underline()
-                        }
+                        })
                         .disabled(isProcessingRecover)
                     }
                 } else {
                     // Show as primary button when only recovery is available
-                    Button(action: { Task { await runRecover(onRecoverAccount) } }) {
+                    Button(action: { Task { await runRecover(onRecoverAccount) } }, label: {
                         Text(isProcessingRecover ? "⏳ Please wait" : "Recover Account")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .background(Color.white)
                             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 2))
-                    }
+                    })
                     .disabled(isProcessingRecover)
                 }
             }
@@ -281,21 +280,21 @@ public struct ConcordiumIDAppPoup: View {
                         .font(.system(size: 16, weight: .bold))
                         .multilineTextAlignment(.leading)
                         .foregroundColor(.black)
-                    
+
                     if let walletConnectUri {
                         QRCodeView(text: "\("IDAPP_HOSTS.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
                             .frame(width: 200, height: 200)
                     }
                     Button(action: {
                         // Your action here
-                    }) {
+                    }, label: {
                         Text("Open {ID App}")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .background(Color(#colorLiteral(red: 0.066, green: 0.262, blue: 0.655, alpha: 1)))
                             .cornerRadius(8)
-                    }
+                    })
                     .frame(width: 320)
                 }
                 .frame(maxHeight: .infinity)
@@ -395,7 +394,7 @@ public struct ConcordiumIDAppPoup: View {
             if let url = URL(string: "https://apps.apple.com/app/concordium-id/id123456789") {
                 openURL(url)
             }
-        }) {
+        }, label: {
             Group {
                 if let image = UIImage(named: "app_store", in: Bundle.module, compatibleWith: nil) {
                     Image(uiImage: image)
@@ -419,16 +418,16 @@ public struct ConcordiumIDAppPoup: View {
                     .cornerRadius(8)
                 }
             }
-        }
+        })
     }
 
     private var closeButton: some View {
         Button(action: {
             ConcordiumIDAppPoup.closePopup()
             isPresented = false
-        }) {
+        }, label: {
             Text("x").font(.system(size: 24)).foregroundColor(.gray)
-        }
+        })
         .accessibilityLabel(Text("Close"))
     }
 
