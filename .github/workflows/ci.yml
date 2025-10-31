@@ -38,5 +38,6 @@ jobs:
             -configuration Debug \
             clean build
 
-       - name: Lint (SwiftLint via SPM)
-        run: swift build --build-tests --skip-update
+      - name: Lint (SwiftLint via SPM)
+        run: |
+          swift build --build-tests --skip-update
