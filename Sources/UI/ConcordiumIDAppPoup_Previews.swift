@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 #if DEBUG
 struct ConcordiumIDAppPoup_Previews: PreviewProvider {
