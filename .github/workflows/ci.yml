@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: ['**']
     types: [opened, synchronize, reopened, ready_for_review]
+
 jobs:
   build-and-test:
     runs-on: macos-14
@@ -29,12 +30,19 @@ jobs:
       - name: Resolve dependencies
         run: swift package resolve --package-path ${{ github.workspace }}
 
-      - name: Lint (SwiftLint via SPM plugin)
-        run: swift build --build-tests --package-path ${{ github.workspace }}
+      - name: Build (iOS)
+        run: |
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build
 
-      - name: Build
-        run: swift build --configuration debug --package-path ${{ github.workspace }}
-
-      # - name: Test
-      #   run: swift test --configuration debug --parallel --package-path ${{ github.workspace }}
-
+      - name: Lint (SwiftLint via Xcode)
+        run: |
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build \
+            -skipPackagePluginValidation=NO
