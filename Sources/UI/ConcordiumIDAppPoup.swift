@@ -11,6 +11,11 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 #endif
 
+/// Popup view for interacting with the Concordium ID App from a host application.
+///
+/// Provides two modes:
+/// - QR code flow for connecting to the ID App.
+/// - Provide flow to create or recover an account via async handlers.
 public struct ConcordiumIDAppPoup: View {
     private let walletConnectUri: String?
     private let onCreateAccount: (() async -> Void)?
@@ -39,6 +44,7 @@ public struct ConcordiumIDAppPoup: View {
         return onCreateAccount != nil || onRecoverAccount != nil
     }
 
+    /// Main content based on the selected flow.
     public var body: some View {
         VStack {
             Group {
@@ -56,8 +62,8 @@ public struct ConcordiumIDAppPoup: View {
     // MARK: - Static Methods (JavaScript API Compatibility)
 
     /**
-     * Closes the popup.
-     * This method is used to dismiss the currently displayed popup.
+     Closes the popup.
+     This method is used to dismiss the currently displayed popup.
      */
     public static func closePopup() {
         // This would be handled by the presenting view controller
@@ -66,8 +72,8 @@ public struct ConcordiumIDAppPoup: View {
     }
 
     /**
-     * Opens the ID App using a deep link.
-     * This method is used to redirect the user to the ID App on mobile devices.
+     Opens the ID App using a deep link.
+     This method is used to redirect the user to the ID App on mobile devices.
      */
     public static func openIdapp(walletConnectMobileUrl: String, walletConnectDesktopUrl: String? = nil) {
         if let url = URL(string: walletConnectMobileUrl) {
@@ -76,8 +82,8 @@ public struct ConcordiumIDAppPoup: View {
     }
 
     /**
-     * Shows the QR code popup for wallet connection.
-     * This function creates a popup that prompts the user to scan a QR code for wallet connection.
+     Shows the QR code popup for wallet connection.
+     This function creates a popup that prompts the user to scan a QR code for wallet connection.
      */
     public static func invokeIdAppDeepLinkPopup(walletConnectUri: String) -> ConcordiumIDAppPoup {
         guard !walletConnectUri.isEmpty else {
@@ -88,8 +94,8 @@ public struct ConcordiumIDAppPoup: View {
     }
 
     /**
-     * Shows the account creation/recovery popup.
-     * This function creates a popup that allows users to create new accounts or recover existing ones.
+     Shows the account creation/recovery popup.
+     This function creates a popup that allows users to create new accounts or recover existing ones.
      */
     public static func invokeIdAppActionsPopup(
         onCreateAccount: (() async -> Void)? = nil,

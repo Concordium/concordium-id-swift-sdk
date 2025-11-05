@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Renders the Concordium logo from the SDK bundle.
 struct ConcordiumLogoView: View {
     var body: some View {
         Image("concordium_logo", bundle: .module)
@@ -9,6 +10,7 @@ struct ConcordiumLogoView: View {
     }
 }
 
+/// Button that opens the App Store listing for the Concordium ID App.
 struct AppStoreButtonView: View {
     @Environment(\.openURL) private var openURL
 

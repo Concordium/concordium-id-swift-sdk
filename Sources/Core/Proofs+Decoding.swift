@@ -21,7 +21,7 @@ import ConcordiumWalletCrypto
 /// - Throws: An error if a required key is missing, has an unexpected type, or if any
 ///           hex string fails to decode into raw bytes.
 
-extension Proofs: Decodable {
+extension Proofs: @retroactive Decodable {
     enum CodingKeys: String, CodingKey {
         case challenge
         case commitments

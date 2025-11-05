@@ -1,8 +1,8 @@
 import Foundation
 import ConcordiumWalletCrypto
 
-// Adds JSON decoding support and convenience helpers to AccountCredential
-extension AccountCredential: Decodable {
+/// Adds JSON decoding support and convenience helpers to `AccountCredential`.
+extension AccountCredential: @retroactive Decodable {
     enum CodingKeys: String, CodingKey {
         case arData
         case credId
@@ -48,12 +48,22 @@ extension AccountCredential: Decodable {
 }
 
 public extension AccountCredential {
+    /// Decodes an `AccountCredential` instance from raw JSON data.
+    /// - Parameters:
+    ///   - data: JSON-encoded data.
+    ///   - configure: Optional closure to customize the `JSONDecoder`.
+    /// - Returns: Decoded `AccountCredential`.
     static func fromJSON(_ data: Data, configure: ((JSONDecoder) -> Void)? = nil) throws -> AccountCredential {
         let decoder = JSONDecoder()
         configure?(decoder)
         return try decoder.decode(AccountCredential.self, from: data)
     }
 
+    /// Decodes an `AccountCredential` instance from a JSON string.
+    /// - Parameters:
+    ///   - json: UTF-8 JSON string.
+    ///   - configure: Optional closure to customize the `JSONDecoder`.
+    /// - Returns: Decoded `AccountCredential`.
     static func fromJSON(_ json: String, configure: ((JSONDecoder) -> Void)? = nil) throws -> AccountCredential {
         guard let data = json.data(using: .utf8) else {
             throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Input string is not valid UTF-8"))

@@ -15,6 +15,7 @@ import GRPC
 // MARK: - SDK Error Definitions
 
 extension ConcordiumIDAppSDK {
+    /// Errors that can be thrown by `ConcordiumIDAppSDK` public APIs.
     enum SDKError: LocalizedError {
         case notInitialized
         case invalidTransactionData
@@ -41,6 +42,11 @@ extension ConcordiumIDAppSDK {
 
 // MARK: - SDK Core
 
+/// Core entry point for Concordium ID App SDK.
+///
+/// Provides utilities to sign and submit credential deployment transactions,
+/// generate account key pairs, and build request payloads required by the
+/// Concordium ecosystem.
 public final class ConcordiumIDAppSDK {
 
     // MARK: - Initialization
@@ -53,54 +59,73 @@ public final class ConcordiumIDAppSDK {
     ///
     /// - Parameters:
     ///   - seedPhrase: BIP39 mnemonic phrase used to derive the wallet seed.
-    ///   - transactionInput: JSON string containing fields `unsignedCdiStr` (stringified JSON) and `expiry` (Int64 Unix seconds).
+    ///   - serializedCredentialDeploymentTransaction: JSON string containing fields `unsignedCdiStr` (stringified JSON) and `expiry` (Int64 Unix seconds).
     ///   - identityProviderID: Not used directly here, kept for potential future routing/validation.
     /// - Throws: SDKError when initialization, parsing, network, or serialization fails.
     public static func signAndSubmit(
         accountIndex: CredentialCounter,
         seedPhrase: String,
-        transactionInput: SerializedCredentialDeploymentTransaction,
+        serializedCredentialDeploymentTransaction: String,
         network: Network
     ) async throws {
-
-        log("Starting credential deployment process...")
+        // Decode input string into transaction model
+        let transactionInput = try parseSerializedCredentialDeploymentTransaction(from: serializedCredentialDeploymentTransaction)
 
         // Parse transaction input JSON
         let unsignedCdi = try AccountCredential.fromJSON(transactionInput.unsignedCdi)
-        log("Parsed transaction data: expiry=\(transactionInput.expiry)")
 
         // Create WalletSeed from mnemonic
         let seedHex = try Mnemonic.deterministicSeedString(from: seedPhrase)
         let seed = try WalletSeed(seedHex: seedHex, network: network)
 
-        // Fetch cryptographic parameters, sign and submit using a GRPC client
+        // Fetch cryptographic parameters from chain
+        let cryptoParams = try await withGRPCClient {
+            try await $0.cryptographicParameters(block: .lastFinal)
+        }
+
+        // Derive account credentials and sign transaction
+        let accountDerivation = SeedBasedAccountDerivation(seed: seed, cryptoParams: cryptoParams)
+
+        let seedIndexes = AccountCredentialSeedIndexes(
+            identity: IdentitySeedIndexes(providerID: 0, index: 0),
+            counter: accountIndex
+        )
+
+        let account = try accountDerivation.deriveAccount(credentials: [seedIndexes])
+        let signedTransaction = try account.keys.sign(deployment: unsignedCdi, expiry: transactionInput.expiry)
+
+        // Serialize and submit transaction
+        let serializedTransaction = try signedTransaction.serialize()
+
         try await withGRPCClient { client in
-            // Fetch cryptographic parameters from chain
-            log("Fetching cryptographic parameters...")
-            let cryptoParams = try await client.cryptographicParameters(block: .lastFinal)
-
-            // Derive account credentials and sign transaction
-            log("Deriving account and signing transaction...")
-            let accountDerivation = SeedBasedAccountDerivation(seed: seed, cryptoParams: cryptoParams)
-
-            let seedIndexes = AccountCredentialSeedIndexes(
-                identity: IdentitySeedIndexes(providerID: 0, index: 0),
-                counter: accountIndex
-            )
-
-            let account = try accountDerivation.deriveAccount(credentials: [seedIndexes])
-            let signedTransaction = try account.keys.sign(deployment: unsignedCdi, expiry: transactionInput.expiry)
-
-            // Serialize and submit transaction
-            let serializedTransaction = try signedTransaction.serialize()
-            log("Submitting credential deployment transaction...")
-
             let txResponse = try await client.send(deployment: serializedTransaction)
             let (blockHash, summary) = try await txResponse.waitUntilFinalized(timeoutSeconds: 10)
-
-            log("Transaction finalized in block \(blockHash): \(summary)")
+            _ = (blockHash, summary) // values available to the caller if needed in future APIs
         }
     }
+
+    private static func parseSerializedCredentialDeploymentTransaction(
+        from jsonString: String
+    ) throws -> SerializedCredentialDeploymentTransaction {
+        guard let data = jsonString.data(using: .utf8) else {
+            throw NSError(
+                domain: "InvalidInput",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Input string is not valid UTF-8"]
+            )
+        }
+
+        do {
+            return try JSONDecoder().decode(SerializedCredentialDeploymentTransaction.self, from: data)
+        } catch {
+            throw NSError(
+                domain: "DecodingError",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to decode SerializedCredentialDeploymentTransaction: \(error.localizedDescription)"]
+            )
+        }
+    }
+
     // MARK: - GRPC Client Wrapper
 
     struct GRPCOptions: Encodable {
@@ -109,6 +134,12 @@ public final class ConcordiumIDAppSDK {
         var insecure: Bool = false
     }
 
+    /// Opens a GRPC connection, executes the provided async operation, and
+    /// ensures the connection and event loop group are shut down correctly.
+    ///
+    /// - Parameter execute: Operation that receives a configured `GRPCNodeClient`.
+    /// - Returns: Result of the provided operation.
+    /// - Throws: `SDKError.networkFailure` if the operation or teardown fails.
     static func withGRPCClient<T>(_ execute: (GRPCNodeClient) async throws -> T) async throws -> T {
         let opts = GRPCOptions()
         let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
@@ -130,12 +161,6 @@ public final class ConcordiumIDAppSDK {
             try? await group.shutdownGracefully()
             throw SDKError.networkFailure(error.localizedDescription)
         }
-    }
-
-    // MARK: - Utilities
-
-    private static func log(_ message: String) {
-        print("[ConcordiumSDK] \(message)")
     }
 }
 
@@ -172,6 +197,13 @@ extension ConcordiumIDAppSDK {
 // MARK: - Account Key Generation Utility
 
 extension ConcordiumIDAppSDK {
+    /// Generates a Concordium account key pair deterministically from a mnemonic and index.
+    ///
+    /// - Parameters:
+    ///   - seedPhrase: BIP39 mnemonic phrase used to derive the wallet seed.
+    ///   - network: Target network for key derivation.
+    ///   - accountIndex: The credential counter (account index) to derive keys for.
+    /// - Returns: `CCDAccountKeyPair` containing hex-encoded private/public keys.
     public static func generateAccountWithSeedPhrase(
         from seedPhrase: String,
         network: Network,
@@ -195,12 +227,14 @@ extension ConcordiumIDAppSDK {
 
 // MARK: - Model: CCDAccountKeyPair
 
+/// Hex-encoded Concordium account key pair.
 public struct CCDAccountKeyPair {
     public let privateKey: String
     public let publicKey: String
 }
 
 // MARK: - Public model for serialized credential deployment transaction
+/// Input model for a serialized credential deployment transaction envelope.
 public struct SerializedCredentialDeploymentTransaction: Codable {
     public let expiry: UInt64
     public let randomness: Randomness
@@ -212,6 +246,7 @@ public struct SerializedCredentialDeploymentTransaction: Codable {
         self.unsignedCdi = unsignedCdi
     }
 
+    /// Collection of randomness values used when constructing the credential.
     public struct Randomness: Codable {
         public let attributesRand: AttributesRand
         public let credCounterRand: String
@@ -234,6 +269,7 @@ public struct SerializedCredentialDeploymentTransaction: Codable {
         }
     }
 
+    /// Random seeds for protected attributes in the credential policy.
     public struct AttributesRand: Codable {
         public let countryOfResidence: String
         public let dob: String
@@ -283,6 +319,7 @@ public struct SerializedCredentialDeploymentTransaction: Codable {
 
 // MARK: - Public models for account requests
 
+/// Request payload for creating an account via an Identity Provider.
 public struct CreateAccountCreationRequestMessage: Codable {
     public let publicKey: String
     public let reason: String
@@ -293,6 +330,7 @@ public struct CreateAccountCreationRequestMessage: Codable {
     }
 }
 
+/// Request payload for recovering an account via an Identity Provider.
 public struct RecoverAccountRequestMessage: Codable {
     public let publicKey: String
     public let description: String

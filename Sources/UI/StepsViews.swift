@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 #endif
 
+/// A single step indicator with title and active state.
 struct StepView: View {
     let title: String
     let isActive: Bool
@@ -25,6 +26,7 @@ struct StepView: View {
     }
 }
 
+/// A thin line connecting step indicators.
 struct ConnectingLine: View {
     var body: some View {
         Rectangle()

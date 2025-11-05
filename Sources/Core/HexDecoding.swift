@@ -1,11 +1,16 @@
 import Foundation
 import ConcordiumWalletCrypto
 
+/// Errors that may occur while decoding a hex string into raw bytes.
 enum HexDecodingError: Error {
     case invalidLength
     case invalidCharacter
 }
 
+/// Convert a hex-encoded string (with optional `0x` prefix) into raw bytes.
+/// - Parameter hexString: The input string containing only hex characters.
+/// - Returns: `Bytes` with decoded values.
+/// - Throws: `HexDecodingError.invalidLength` for odd length; `HexDecodingError.invalidCharacter` for non-hex chars.
 @inline(__always)
 func bytesFromHexString(_ hexString: String) throws -> Bytes {
     let string = hexString.hasPrefix("0x") ? String(hexString.dropFirst(2)) : hexString
@@ -25,6 +30,7 @@ func bytesFromHexString(_ hexString: String) throws -> Bytes {
     }
     return bytes
 }
+
 
 
 
