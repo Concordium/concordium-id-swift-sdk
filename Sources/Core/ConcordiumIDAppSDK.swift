@@ -67,7 +67,7 @@ public final class ConcordiumIDAppSDK {
         seedPhrase: String,
         serializedCredentialDeploymentTransaction: String,
         network: Network
-    ) async throws {
+    ) async throws -> String {
         // Decode input string into transaction model
         let transactionInput = try parseSerializedCredentialDeploymentTransaction(from: serializedCredentialDeploymentTransaction)
 
@@ -97,11 +97,12 @@ public final class ConcordiumIDAppSDK {
         // Serialize and submit transaction
         let serializedTransaction = try signedTransaction.serialize()
 
-        try await withGRPCClient { client in
+        let txHash = try await withGRPCClient { client in
             let txResponse = try await client.send(deployment: serializedTransaction)
-            let (blockHash, summary) = try await txResponse.waitUntilFinalized(timeoutSeconds: 10)
-            _ = (blockHash, summary) // values available to the caller if needed in future APIs
+            return txResponse.hash
         }
+
+        return txHash.value.map { String(format: "%02x", $0) }.joined()
     }
 
     private static func parseSerializedCredentialDeploymentTransaction(

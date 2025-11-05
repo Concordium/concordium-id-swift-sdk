@@ -90,21 +90,21 @@ Notes:
 sequenceDiagram
     participant Host as Host View
     participant Popup as ConcordiumIDAppPoup
-    participant Create as onCreateAccount (async)
-    participant Recover as onRecoverAccount (async)
+    participant CreateHandler as onCreateAccount async handler
+    participant RecoverHandler as onRecoverAccount async handler
 
     Host->>Popup: invokeIdAppActionsPopup(onCreateAccount?, onRecoverAccount?, topic?)
     Popup-->>Host: View
     Host->>Host: Present Popup
     alt Create available
         Host->>Popup: Tap "Create New Account"
-        Popup->>Create: runCreate()
-        Create-->>Popup: completion
+        Popup->>CreateHandler: runCreate
+        CreateHandler-->>Popup: completion
     end
     alt Recover available
         Host->>Popup: Tap "Recover Account/Recover"
-        Popup->>Recover: runRecover()
-        Recover-->>Popup: completion
+        Popup->>RecoverHandler: runRecover
+        RecoverHandler-->>Popup: completion
     end
     Host->>Popup: Close (button)
     Popup->>Host: Notification (close)
