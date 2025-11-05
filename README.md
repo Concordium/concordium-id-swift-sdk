@@ -74,8 +74,4 @@ ConcordiumIDAppPoup.invokeIdAppActionsPopup(
 
 - Low-Level Design and sequence diagrams: `docs/LLD.md`
 
-### License
-
-MIT (or your chosen license)
-
 # concordium-id-swift-sdk
