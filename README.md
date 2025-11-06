@@ -32,7 +32,7 @@ Task {
         try await ConcordiumIDAppSDK.signAndSubmit(
             accountIndex: accountIndex,
             seedPhrase: seedPhrase,
-            serializedCredentialDeploymentTransaction: serialized,
+            serializedCredentialDeploymentTransaction: String,
             network: network
         )
     } catch {
