@@ -73,5 +73,3 @@ ConcordiumIDAppPoup.invokeIdAppActionsPopup(
 ### Documentation
 
 - Low-Level Design and sequence diagrams: `docs/LLD.md`
-
-# concordium-id-swift-sdk
