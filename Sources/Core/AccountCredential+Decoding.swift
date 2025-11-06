@@ -47,7 +47,7 @@ extension AccountCredential: @retroactive Decodable {
     }
 }
 
-public extension AccountCredential {
+extension AccountCredential {
     /// Decodes an `AccountCredential` instance from raw JSON data.
     /// - Parameters:
     ///   - data: JSON-encoded data.

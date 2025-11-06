@@ -25,7 +25,7 @@ extension ConcordiumIDAppSDK {
         var errorDescription: String? {
             switch self {
             case .notInitialized:
-                return "Concordium SDK not initialized. Please call initialize() first."
+                return "Concordium ID SDK not initialized. Please call initialize() first."
             case .invalidTransactionData:
                 return "Transaction data is invalid or improperly formatted."
             case .identityProviderNotFound:
@@ -54,13 +54,19 @@ public final class ConcordiumIDAppSDK {
 
     // MARK: - Public APIs
 
-    /// Creates and submits a credential deployment transaction.
+    /// Creates, signs, and submits a credential deployment transaction to the blockchain.
     ///
     /// - Parameters:
-    ///   - seedPhrase: BIP39 mnemonic phrase used to derive the wallet seed.
-    ///   - serializedCredentialDeploymentTransaction: JSON string containing fields `unsignedCdiStr` (stringified JSON) and `expiry` (Int64 Unix seconds).
-    ///   - identityProviderID: Not used directly here, kept for potential future routing/validation.
-    /// - Throws: SDKError when initialization, parsing, network, or serialization fails.
+    ///   - accountIndex: The credential counter or index used to derive the account from the wallet seed.
+    ///   - seedPhrase: The BIP39 mnemonic phrase used to derive the wallet’s deterministic seed.
+    ///   - serializedCredentialDeploymentTransaction: A JSON string containing:
+    ///       - `unsignedCdiStr`: The stringified JSON of the unsigned credential deployment information.
+    ///       - `expiry`: The transaction expiry time in Unix seconds (Int64).
+    ///   - network: The target blockchain network configuration (e.g., mainnet, testnet).
+    ///
+    /// - Returns: A hexadecimal string representing the hash of the submitted transaction.
+    ///
+    /// - Throws: `SDKError` if decoding, derivation, signing, or network submission fails.
     public static func signAndSubmit(
         accountIndex: CredentialCounter,
         seedPhrase: String,
@@ -78,7 +84,9 @@ public final class ConcordiumIDAppSDK {
         let seed = try WalletSeed(seedHex: seedHex, network: network)
 
         // Fetch cryptographic parameters from chain
-        let cryptoParams = try await withGRPCClient {
+        guard let configuration = Self.configuration else { throw SDKError.notInitialized }
+
+        let cryptoParams = try await withGRPCClient(configuration: configuration) {
             try await $0.cryptographicParameters(block: .lastFinal)
         }
 
@@ -95,8 +103,9 @@ public final class ConcordiumIDAppSDK {
 
         // Serialize and submit transaction
         let serializedTransaction = try signedTransaction.serialize()
+        guard let configuration = Self.configuration else { throw SDKError.notInitialized }
 
-        let txHash = try await withGRPCClient { client in
+        let txHash = try await withGRPCClient(configuration: configuration) { client in
             let txResponse = try await client.send(deployment: serializedTransaction)
             return txResponse.hash
         }
@@ -128,27 +137,25 @@ public final class ConcordiumIDAppSDK {
 
     // MARK: - GRPC Client Wrapper
 
-    struct GRPCOptions: Encodable {
-        var host: String = "grpc.testnet.concordium.com"
-        var port: Int = 20000
-        var insecure: Bool = false
-    }
-
     /// Opens a GRPC connection, executes the provided async operation, and
     /// ensures the connection and event loop group are shut down correctly.
     ///
-    /// - Parameter execute: Operation that receives a configured `GRPCNodeClient`.
+    /// - Parameters:
+    ///   - configuration: The Concordium network configuration to connect to (e.g., `.mainnet` or `.testnet`).
+    ///   - execute: Operation that receives a configured `GRPCNodeClient`.
     /// - Returns: Result of the provided operation.
     /// - Throws: `SDKError.networkFailure` if the operation or teardown fails.
-    static func withGRPCClient<T>(_ execute: (GRPCNodeClient) async throws -> T) async throws -> T {
-        let opts = GRPCOptions()
+    static func withGRPCClient<T>(
+        configuration: ConcordiumConfiguration,
+        _ execute: (GRPCNodeClient) async throws -> T
+    ) async throws -> T {
         let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 
-        let connectionBuilder = opts.insecure
-            ? ClientConnection.insecure(group: group)
-            : ClientConnection.usingPlatformAppropriateTLS(for: group)
+        let connectionBuilder = configuration.useTLS
+            ? ClientConnection.usingPlatformAppropriateTLS(for: group)
+            : ClientConnection.insecure(group: group)
 
-        let connection = connectionBuilder.connect(host: opts.host, port: opts.port)
+        let connection = connectionBuilder.connect(host: configuration.host, port: configuration.port)
         let client = GRPCNodeClient(channel: connection)
 
         do {
@@ -162,6 +169,7 @@ public final class ConcordiumIDAppSDK {
             throw SDKError.networkFailure(error.localizedDescription)
         }
     }
+
 }
 
 // MARK: - Request Builders (Account Create/Recover)
@@ -216,10 +224,12 @@ extension ConcordiumIDAppSDK {
             identity: IdentitySeedIndexes(providerID: 0, index: 0),
             counter: accountIndex
         )
+    
+        let keys = try seed.signingKey(accountCredentialIndexes: indexes)
 
-        let privateKey = try seed.signingKey(accountCredentialIndexes: indexes).rawRepresentation.map { String(format: "%02x", $0) }.joined()
+        let privateKey = keys.rawRepresentation.map { String(format: "%02x", $0) }.joined()
 
-        let publicKey = try seed.signingKey(accountCredentialIndexes: indexes).publicKey.rawRepresentation.map { String(format: "%02x", $0) }.joined()
+        let publicKey = keys.publicKey.rawRepresentation.map { String(format: "%02x", $0) }.joined()
 
         return CCDAccountKeyPair(privateKey: privateKey, publicKey: publicKey)
     }
@@ -338,5 +348,76 @@ public struct RecoverAccountRequestMessage: Codable {
     public init(publicKey: String, description: String) {
         self.publicKey = publicKey
         self.description = description
+    }
+}
+
+extension ConcordiumIDAppSDK {
+    private static var configuration: ConcordiumConfiguration?
+
+    /// Initializes the Concordium SDK with a given configuration.
+    ///
+    /// Must be called before any network operations.
+    public static func initialize(configuration: ConcordiumConfiguration = .testnet) {
+        self.configuration = configuration
+    }
+
+    /// Ensures the SDK has been initialized before use.
+    private static func ensureInitialized() throws {
+        guard configuration != nil else {
+            throw SDKError.notInitialized
+        }
+    }
+}
+
+// MARK: - Configuration
+
+/// Represents the configuration details required to establish a gRPC connection
+/// with the Concordium blockchain network.
+///
+/// Use this structure to specify the network host, port, and whether to connect
+/// securely using TLS. Predefined configurations for **mainnet** and **testnet**
+/// are available via `.mainnet` and `.testnet`.
+public struct ConcordiumConfiguration {
+
+    /// The gRPC host address of the Concordium node (e.g., `"grpc.mainnet.concordium.com"`).
+    public let host: String
+
+    /// The gRPC port number used for network communication (default: `20000`).
+    public let port: Int
+
+    /// A Boolean value that determines whether TLS should be used for the connection.
+    ///
+    /// Set this to `true` for secure connections or `false` for insecure (non-TLS)
+    /// connections — typically used only for local development or testing.
+    public let useTLS: Bool
+
+    /// Predefined configuration for the **Concordium Mainnet**.
+    ///
+    /// Connects securely using TLS to the main production Concordium blockchain network.
+    public static let mainnet = ConcordiumConfiguration(
+        host: "grpc.mainnet.concordium.com",
+        port: 20000,
+        useTLS: true
+    )
+
+    /// Predefined configuration for the **Concordium Testnet**.
+    ///
+    /// Connects securely using TLS to the Concordium public test network for testing and development.
+    public static let testnet = ConcordiumConfiguration(
+        host: "grpc.testnet.concordium.com",
+        port: 20000,
+        useTLS: true
+    )
+
+    /// Creates a new configuration instance for a custom Concordium network setup.
+    ///
+    /// - Parameters:
+    ///   - host: The gRPC host address of the target Concordium node.
+    ///   - port: The gRPC port number for the connection.
+    ///   - useTLS: Indicates whether to use TLS for secure communication (default: `true`).
+    public init(host: String, port: Int, useTLS: Bool = true) {
+        self.host = host
+        self.port = port
+        self.useTLS = useTLS
     }
 }
