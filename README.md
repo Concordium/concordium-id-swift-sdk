@@ -1,75 +1,192 @@
-## Concordium ID Swift SDK
+# **Concordium ID Swift SDK**
 
-A lightweight Swift SDK to integrate Concordium ID App flows in iOS/macOS apps. It provides:
+A lightweight and modern Swift SDK that enables seamless integration of **Concordium ID App** flows into your iOS applications.
 
-- Core APIs to sign and submit credential deployment transactions
-- Utilities to derive account keys from a mnemonic
-- SwiftUI components for QR connection and create/recover account flows
+The SDK provides a complete set of APIs and UI components for:
 
-### Installation
+* Creating and submitting **credential deployment transactions**
+* Deriving **account keys** securely from a BIP39 mnemonic phrase
+* Presenting **SwiftUI-based flows** for QR connection and account creation/recovery
 
-Add the package using Swift Package Manager (Xcode or `Package.swift`).
+---
+
+## 🚀 **Features**
+
+* 🔐 Wallet and key derivation using secure BIP39-based seed phrases
+* 🧩 Simple async APIs for signing and submitting credential deployments
+* 🪄 Pre-built SwiftUI popups for Create, Recover, and WalletConnect flows
+* ⚙️ Environment configuration (Testnet / Mainnet)
+* 💻 Works across iOS and macOS targets
+
+---
+
+## 📦 **Installation**
+
+The SDK is distributed via **Swift Package Manager (SPM)**.
+
+### **Using Xcode**
+
+1. In Xcode, go to **File ▸ Add Packages...**
+2. Enter the repository URL:
+
+   ```
+   https://github.com/your-org/concordium-id-swift-sdk.git
+   ```
+3. Select **Up to Next Major Version** and add the package to your target.
+
+### **Using `Package.swift`**
 
 ```swift
-.package(url: "https://github.com/your-org/concordium-id-swift-sdk.git", from: "1.0.0")
+dependencies: [
+    .package(url: "https://github.com/Concordium/concordium-id-swift-sdk.git", from: "1.0.0")
+]
 ```
 
-Then add the library to your target dependencies.
+Then include the library in your target dependencies:
 
-### Quick Start (Core)
+```swift
+.target(
+    name: "Client target app name",
+    dependencies: ["ConcordiumIDAppSDK"]
+)
+```
+
+---
+
+## ⚡️ **Quick Start — Core APIs**
+
+Import the SDK:
 
 ```swift
 import ConcordiumIDAppSDK
+```
 
-// Prepare inputs
-let seedPhrase = "abandon ability able ..." // BIP39
+Initialize the SDK (optional, defaults to `.testnet`):
+
+```swift
+ConcordiumIDAppSDK.initialize(with: .testnet)
+```
+
+### **Submit a Credential Deployment Transaction**
+
+```swift
+let seedPhrase = "abandon ability able ..." // BIP39 mnemonic
 let network: Network = .testnet
 let accountIndex: CredentialCounter = 0
-let serialized = "{\n  \"expiry\": 1730830000,\n  \"randomness\": { ... },\n  \"unsignedCdi\": "... JSON ..."\n}"
+
+let serializedTransaction = """
+{
+    "expiry": 1730830000,
+    "unsignedCdi": "{ ... JSON ... }"
+}
+"""
 
 Task {
     do {
-        try await ConcordiumIDAppSDK.signAndSubmit(
+        let txHash = try await ConcordiumIDAppSDK.signAndSubmit(
             accountIndex: accountIndex,
             seedPhrase: seedPhrase,
-            serializedCredentialDeploymentTransaction: String,
+            serializedCredentialDeploymentTransaction: serializedTransaction,
             network: network
         )
+        print("✅ Transaction submitted with hash: \(txHash)")
     } catch {
-        // handle error
+        print("❌ Failed to submit transaction: \(error)")
     }
 }
 ```
 
-Derive an account key pair:
+### **Derive an Account Key Pair**
 
 ```swift
-let keys = try await ConcordiumIDAppSDK.generateAccountWithSeedPhrase(
+let accountKeys = try await ConcordiumIDAppSDK.generateAccountWithSeedPhrase(
     from: seedPhrase,
     network: network,
     accountIndex: accountIndex
 )
-print(keys.publicKey)
+
+print("Public Key:", accountKeys.publicKey)
 ```
 
-### Quick Start (UI)
+---
 
-QR connect popup:
+## 🖼️ **Quick Start — SwiftUI Components**
+
+### **QR Connect Popup**
 
 ```swift
-ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(walletConnectUri: "wc:...@2?...")
+ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(
+    walletConnectUri: "wc:...@2?..."
+)
 ```
 
-Provide flow (create/recover):
+### **Create / Recover Account Popup**
 
 ```swift
 ConcordiumIDAppPoup.invokeIdAppActionsPopup(
-    onCreateAccount: { /* async create */ },
-    onRecoverAccount: { /* async recover */ },
+    onCreateAccount: { /* async create flow */ },
+    onRecoverAccount: { /* async recover flow */ },
     walletConnectSessionTopic: "ABCD"
 )
 ```
 
-### Documentation
+These pre-built popups handle UI presentation and user interaction for Concordium ID flows.
 
-- Low-Level Design and sequence diagrams: `docs/LLD.md`
+---
+
+## ⚙️ **Configuration**
+
+You can connect to either **Mainnet** or **Testnet** by initializing with the appropriate configuration:
+
+```swift
+ConcordiumIDAppSDK.initialize(with: .mainnet)
+```
+
+Or define your own custom configuration:
+
+```swift
+let customConfig = ConcordiumConfiguration(
+    host: "grpc.devnet.concordium.com",
+    port: 20000,
+    useTLS: true
+)
+
+ConcordiumIDAppSDK.initialize(with: customConfig)
+```
+
+---
+
+## 📘 **Documentation**
+
+Detailed documentation and diagrams can be found in:
+
+```
+docs/LLD.md
+```
+
+It includes:
+
+* Sequence diagrams for credential deployment
+* Key derivation flow
+* SDK initialization and GRPC communication model
+
+---
+
+## 🧱 **Architecture Overview**
+
+| Layer              | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| **Core SDK**       | Core APIs for key derivation, signing, and GRPC interaction |
+| **UI Components**  | SwiftUI-based popups and flows for ID App integration       |
+| **Configuration**  | Simple setup for network endpoints (Mainnet/Testnet)        |
+| **Error Handling** | Unified `SDKError` enum for predictable failure cases       |
+
+---
+
+## 🧩 **Requirements**
+
+* iOS 15.0+
+* Swift 6.0+
+* Xcode 16.0+
+
+---
