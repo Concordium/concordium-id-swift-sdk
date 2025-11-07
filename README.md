@@ -61,12 +61,6 @@ Import the SDK:
 import ConcordiumIDAppSDK
 ```
 
-Initialize the SDK (optional, defaults to `.testnet`):
-
-```swift
-ConcordiumIDAppSDK.initialize(with: .testnet)
-```
-
 ### **Submit a Credential Deployment Transaction**
 
 ```swift
