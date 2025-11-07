@@ -68,19 +68,17 @@ let seedPhrase = "abandon ability able ..." // BIP39 mnemonic
 let network: Network = .testnet
 let accountIndex: CredentialCounter = 0
 
-let serializedTransaction = """
-{
-    "expiry": 1730830000,
-    "unsignedCdi": "{ ... JSON ... }"
-}
-"""
+// Extract these from your serialized credential deployment transaction JSON
+let unsignedCdiStr = "{ ... JSON ... }"
+let expiry: UInt64 = 1730830000
 
 Task {
     do {
         let txHash = try await ConcordiumIDAppSDK.signAndSubmit(
             accountIndex: accountIndex,
             seedPhrase: seedPhrase,
-            serializedCredentialDeploymentTransaction: serializedTransaction,
+            expiry: expiry,
+            unsignedCdiStr: unsignedCdiStr,
             network: network
         )
         print("✅ Transaction submitted with hash: \(txHash)")
