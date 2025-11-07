@@ -18,7 +18,7 @@ extension ConcordiumIDAppSDK {
     enum SDKError: LocalizedError {
         case notInitialized
         case invalidTransactionData
-        case identityProviderNotFound
+        case invalidString
         case networkFailure(String)
         case serializationFailure(String)
 
@@ -28,8 +28,8 @@ extension ConcordiumIDAppSDK {
                 return "Concordium ID SDK not initialized. Please call initialize() first."
             case .invalidTransactionData:
                 return "Transaction data is invalid or improperly formatted."
-            case .identityProviderNotFound:
-                return "Specified Identity Provider not found."
+            case .invalidString:
+                return "Please Provide Non-Empty String."
             case .networkFailure(let reason):
                 return "Network operation failed: \(reason)"
             case .serializationFailure(let details):
@@ -73,6 +73,9 @@ public final class ConcordiumIDAppSDK {
         serializedCredentialDeploymentTransaction: String,
         network: Network
     ) async throws -> String {
+
+        guard !seedPhrase.isEmpty, !serializedCredentialDeploymentTransaction.isEmpty else { throw SDKError.invalidString }
+
         // Decode input string into transaction model
         let transactionInput = try parseSerializedCredentialDeploymentTransaction(from: serializedCredentialDeploymentTransaction)
 
@@ -82,6 +85,8 @@ public final class ConcordiumIDAppSDK {
         // Create WalletSeed from mnemonic
         let seedHex = try Mnemonic.deterministicSeedString(from: seedPhrase)
         let seed = try WalletSeed(seedHex: seedHex, network: network)
+
+        setConfiguration(for: network)
 
         // Fetch cryptographic parameters from chain
         guard let configuration = Self.configuration else { throw SDKError.notInitialized }
@@ -111,6 +116,15 @@ public final class ConcordiumIDAppSDK {
         }
 
         return txHash.value.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func setConfiguration(for network: Network) {
+        switch network {
+        case .testnet:
+            configuration = .testnet
+        case .mainnet:
+            configuration = .mainnet
+        }
     }
 
     private static func parseSerializedCredentialDeploymentTransaction(
@@ -353,20 +367,6 @@ public struct RecoverAccountRequestMessage: Codable {
 
 extension ConcordiumIDAppSDK {
     private static var configuration: ConcordiumConfiguration?
-
-    /// Initializes the Concordium SDK with a given configuration.
-    ///
-    /// Must be called before any network operations.
-    public static func initialize(configuration: ConcordiumConfiguration = .testnet) {
-        self.configuration = configuration
-    }
-
-    /// Ensures the SDK has been initialized before use.
-    private static func ensureInitialized() throws {
-        guard configuration != nil else {
-            throw SDKError.notInitialized
-        }
-    }
 }
 
 // MARK: - Configuration
@@ -395,7 +395,7 @@ public struct ConcordiumConfiguration {
     ///
     /// Connects securely using TLS to the main production Concordium blockchain network.
     public static let mainnet = ConcordiumConfiguration(
-        host: "grpc.mainnet.concordium.com",
+        host: "grpc.mainnet.concordium.software",
         port: 20000,
         useTLS: true
     )

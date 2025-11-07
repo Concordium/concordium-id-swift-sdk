@@ -1,5 +1,5 @@
 //
-//  ConcordiumIDAppPoup.swift
+//  ConcordiumIDAppPopup.swift
 //  concordium-id-swift-sdk
 //
 //  Created by Lov  on 23/10/25.
@@ -16,7 +16,7 @@ import UIKit
 /// Provides two modes:
 /// - QR code flow for connecting to the ID App.
 /// - Provide flow to create or recover an account via async handlers.
-public struct ConcordiumIDAppPoup: View {
+public struct ConcordiumIDAppPopup: View {
     private let walletConnectUri: String?
     private let onCreateAccount: (() async -> Void)?
     private let onRecoverAccount: (() async -> Void)?
@@ -68,7 +68,7 @@ public struct ConcordiumIDAppPoup: View {
     public static func closePopup() {
         // This would be handled by the presenting view controller
         // In a real implementation, you might use a notification or delegate pattern
-        NotificationCenter.default.post(name: NSNotification.Name("ConcordiumIDAppPoupClose"), object: nil)
+        NotificationCenter.default.post(name: NSNotification.Name("ConcordiumIDAppPopupClose"), object: nil)
     }
 
     /**
@@ -85,12 +85,12 @@ public struct ConcordiumIDAppPoup: View {
      Shows the QR code popup for wallet connection.
      This function creates a popup that prompts the user to scan a QR code for wallet connection.
      */
-    public static func invokeIdAppDeepLinkPopup(walletConnectUri: String) -> ConcordiumIDAppPoup {
+    public static func invokeIdAppDeepLinkPopup(walletConnectUri: String) -> ConcordiumIDAppPopup {
         guard !walletConnectUri.isEmpty else {
-            fatalError("ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup() requires a valid walletConnectUri")
+            fatalError("ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup() requires a valid walletConnectUri")
         }
 
-        return ConcordiumIDAppPoup(walletConnectUri: walletConnectUri)
+        return ConcordiumIDAppPopup(walletConnectUri: walletConnectUri)
     }
 
     /**
@@ -101,7 +101,7 @@ public struct ConcordiumIDAppPoup: View {
         onCreateAccount: (() async -> Void)? = nil,
         onRecoverAccount: (() async -> Void)? = nil,
         walletConnectSessionTopic: String? = nil
-    ) -> ConcordiumIDAppPoup {
+    ) -> ConcordiumIDAppPopup {
         // Check if at least one of the handlers is provided
         guard onCreateAccount != nil || onRecoverAccount != nil else {
             fatalError("At least one of the handlers must be provided")
@@ -112,7 +112,7 @@ public struct ConcordiumIDAppPoup: View {
             fatalError("Wallet Connect's session.topic is required for account creation")
         }
 
-        return ConcordiumIDAppPoup(
+        return ConcordiumIDAppPopup(
             onCreateAccount: onCreateAccount,
             onRecoverAccount: onRecoverAccount,
             walletConnectSessionTopic: walletConnectSessionTopic
@@ -353,7 +353,7 @@ public struct ConcordiumIDAppPoup: View {
 
     private var closeButton: some View {
         Button(action: {
-            ConcordiumIDAppPoup.closePopup()
+            ConcordiumIDAppPopup.closePopup()
             isPresented = false
         }, label: {
             Text("x").font(.system(size: 24)).foregroundColor(.gray)
