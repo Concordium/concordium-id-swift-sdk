@@ -2,8 +2,6 @@
 //  ConcordiumIDAppPopup.swift
 //  concordium-id-swift-sdk
 //
-//  Created by Lov  on 23/10/25.
-//
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
