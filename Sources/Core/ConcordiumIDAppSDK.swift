@@ -54,33 +54,35 @@ public final class ConcordiumIDAppSDK {
 
     // MARK: - Public APIs
 
-    /// Creates, signs, and submits a credential deployment transaction to the blockchain.
+    /// Creates, signs, and submits a credential deployment transaction to the Concordium blockchain.
+    ///
+    /// This method derives the account keys from a BIP39 seed phrase, signs the provided
+    /// unsigned credential deployment information, serializes the transaction, and submits
+    /// it to the specified network.
     ///
     /// - Parameters:
     ///   - accountIndex: The credential counter or index used to derive the account from the wallet seed.
     ///   - seedPhrase: The BIP39 mnemonic phrase used to derive the wallet’s deterministic seed.
-    ///   - serializedCredentialDeploymentTransaction: A JSON string containing:
-    ///       - `unsignedCdiStr`: The stringified JSON of the unsigned credential deployment information.
-    ///       - `expiry`: The transaction expiry time in Unix seconds (Int64).
-    ///   - network: The target blockchain network configuration (e.g., mainnet, testnet).
+    ///   - expiry: The transaction expiry timestamp, expressed in Unix seconds (`UInt64`).
+    ///   - unsignedCdiStr: A JSON string representation of the unsigned credential deployment information.
+    ///   - network: The target blockchain network (`.mainnet` or `.testnet`).
     ///
-    /// - Returns: A hexadecimal string representing the hash of the submitted transaction.
+    /// - Returns: A hexadecimal string representing the hash of the successfully submitted transaction.
     ///
-    /// - Throws: `SDKError` if decoding, derivation, signing, or network submission fails.
+    /// - Throws: An `SDKError` if the input strings are invalid, decoding fails,
+    ///   key derivation or signing fails, or the network submission is unsuccessful.
     public static func signAndSubmit(
         accountIndex: CredentialCounter,
         seedPhrase: String,
-        serializedCredentialDeploymentTransaction: String,
+        expiry: UInt64,
+        unsignedCdiStr: String,
         network: Network
     ) async throws -> String {
 
-        guard !seedPhrase.isEmpty, !serializedCredentialDeploymentTransaction.isEmpty else { throw SDKError.invalidString }
-
-        // Decode input string into transaction model
-        let transactionInput = try parseSerializedCredentialDeploymentTransaction(from: serializedCredentialDeploymentTransaction)
+        guard !seedPhrase.isEmpty, !unsignedCdiStr.isEmpty  else { throw SDKError.invalidString }
 
         // Parse transaction input JSON
-        let unsignedCdi = try AccountCredential.fromJSON(transactionInput.unsignedCdi)
+        let unsignedCdi = try AccountCredential.fromJSON(unsignedCdiStr)
 
         // Create WalletSeed from mnemonic
         let seedHex = try Mnemonic.deterministicSeedString(from: seedPhrase)
@@ -104,7 +106,7 @@ public final class ConcordiumIDAppSDK {
         )
 
         let account = try accountDerivation.deriveAccount(credentials: [seedIndexes])
-        let signedTransaction = try account.keys.sign(deployment: unsignedCdi, expiry: transactionInput.expiry)
+        let signedTransaction = try account.keys.sign(deployment: unsignedCdi, expiry: expiry)
 
         // Serialize and submit transaction
         let serializedTransaction = try signedTransaction.serialize()
@@ -124,28 +126,6 @@ public final class ConcordiumIDAppSDK {
             configuration = .testnet
         case .mainnet:
             configuration = .mainnet
-        }
-    }
-
-    private static func parseSerializedCredentialDeploymentTransaction(
-        from jsonString: String
-    ) throws -> SerializedCredentialDeploymentTransaction {
-        guard let data = jsonString.data(using: .utf8) else {
-            throw NSError(
-                domain: "InvalidInput",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Input string is not valid UTF-8"]
-            )
-        }
-
-        do {
-            return try JSONDecoder().decode(SerializedCredentialDeploymentTransaction.self, from: data)
-        } catch {
-            throw NSError(
-                domain: "DecodingError",
-                code: -2,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to decode SerializedCredentialDeploymentTransaction: \(error.localizedDescription)"]
-            )
         }
     }
 
@@ -255,90 +235,6 @@ extension ConcordiumIDAppSDK {
 public struct CCDAccountKeyPair {
     public let privateKey: String
     public let publicKey: String
-}
-
-// MARK: - Public model for serialized credential deployment transaction
-/// Input model for a serialized credential deployment transaction envelope.
-public struct SerializedCredentialDeploymentTransaction: Codable {
-    public let expiry: UInt64
-    public let randomness: Randomness
-    public let unsignedCdi: String
-
-    public init(expiry: UInt64, randomness: Randomness, unsignedCdi: String) {
-        self.expiry = expiry
-        self.randomness = randomness
-        self.unsignedCdi = unsignedCdi
-    }
-
-    /// Collection of randomness values used when constructing the credential.
-    public struct Randomness: Codable {
-        public let attributesRand: AttributesRand
-        public let credCounterRand: String
-        public let idCredSecRand: String
-        public let maxAccountsRand: String
-        public let prfRand: String
-
-        public init(
-            attributesRand: AttributesRand,
-            credCounterRand: String,
-            idCredSecRand: String,
-            maxAccountsRand: String,
-            prfRand: String
-        ) {
-            self.attributesRand = attributesRand
-            self.credCounterRand = credCounterRand
-            self.idCredSecRand = idCredSecRand
-            self.maxAccountsRand = maxAccountsRand
-            self.prfRand = prfRand
-        }
-    }
-
-    /// Random seeds for protected attributes in the credential policy.
-    public struct AttributesRand: Codable {
-        public let countryOfResidence: String
-        public let dob: String
-        public let firstName: String
-        public let idDocExpiresAt: String
-        public let idDocIssuedAt: String
-        public let idDocIssuer: String
-        public let idDocNo: String
-        public let idDocType: String
-        public let lastName: String
-        public let nationalIdNo: String
-        public let nationality: String
-        public let sex: String
-        public let taxIdNo: String
-
-        public init(
-            countryOfResidence: String,
-            dob: String,
-            firstName: String,
-            idDocExpiresAt: String,
-            idDocIssuedAt: String,
-            idDocIssuer: String,
-            idDocNo: String,
-            idDocType: String,
-            lastName: String,
-            nationalIdNo: String,
-            nationality: String,
-            sex: String,
-            taxIdNo: String
-        ) {
-            self.countryOfResidence = countryOfResidence
-            self.dob = dob
-            self.firstName = firstName
-            self.idDocExpiresAt = idDocExpiresAt
-            self.idDocIssuedAt = idDocIssuedAt
-            self.idDocIssuer = idDocIssuer
-            self.idDocNo = idDocNo
-            self.idDocType = idDocType
-            self.lastName = lastName
-            self.nationalIdNo = nationalIdNo
-            self.nationality = nationality
-            self.sex = sex
-            self.taxIdNo = taxIdNo
-        }
-    }
 }
 
 // MARK: - Public models for account requests
