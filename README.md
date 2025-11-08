@@ -1,6 +1,9 @@
+
+---
+
 # **Concordium ID Swift SDK**
 
-A lightweight and modern Swift SDK that enables seamless integration of **Concordium ID App** flows into your iOS applications.
+A lightweight and modern **Swift SDK** that enables seamless integration of **Concordium ID App** flows into your iOS applications.
 
 The SDK provides a complete set of APIs and UI components for:
 
@@ -29,7 +32,7 @@ The SDK is distributed via **Swift Package Manager (SPM)**.
 1. In Xcode, go to **File ▸ Add Packages...**
 2. Enter the repository URL:
 
-   ```
+   ```bash
    https://github.com/your-org/concordium-id-swift-sdk.git
    ```
 3. Select **Up to Next Major Version** and add the package to your target.
@@ -46,7 +49,7 @@ Then include the library in your target dependencies:
 
 ```swift
 .target(
-    name: "Client target app name",
+    name: "YourAppTarget",
     dependencies: ["ConcordiumIDAppSDK"]
 )
 ```
@@ -88,6 +91,8 @@ Task {
 }
 ```
 
+---
+
 ### **Derive an Account Key Pair**
 
 ```swift
@@ -107,7 +112,7 @@ print("Public Key:", accountKeys.publicKey)
 ### **QR Connect Popup**
 
 ```swift
-ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(
+ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
     walletConnectUri: "wc:...@2?..."
 )
 ```
@@ -115,9 +120,13 @@ ConcordiumIDAppPoup.invokeIdAppDeepLinkPopup(
 ### **Create / Recover Account Popup**
 
 ```swift
-ConcordiumIDAppPoup.invokeIdAppActionsPopup(
-    onCreateAccount: { /* async create flow */ },
-    onRecoverAccount: { /* async recover flow */ },
+ConcordiumIDAppPopup.invokeIdAppActionsPopup(
+    onCreateAccount: {
+        // async create flow
+    },
+    onRecoverAccount: {
+        // async recover flow
+    },
     walletConnectSessionTopic: "ABCD"
 )
 ```
@@ -126,15 +135,7 @@ These pre-built popups handle UI presentation and user interaction for Concordiu
 
 ---
 
-## ⚙️ **Configuration**
-
-You can connect to either **Mainnet** or **Testnet** by initializing with the appropriate configuration:
-
-```swift
-ConcordiumIDAppSDK.initialize(with: .mainnet)
-```
-
-Or define your own custom configuration:
+## ⚙️ **Custom Configuration Example**
 
 ```swift
 let customConfig = ConcordiumConfiguration(
@@ -142,33 +143,15 @@ let customConfig = ConcordiumConfiguration(
     port: 20000,
     useTLS: true
 )
-
-ConcordiumIDAppSDK.initialize(with: customConfig)
 ```
-
----
-
-## 📘 **Documentation**
-
-Detailed documentation and diagrams can be found in:
-
-```
-docs/LLD.md
-```
-
-It includes:
-
-* Sequence diagrams for credential deployment
-* Key derivation flow
-* SDK initialization and GRPC communication model
 
 ---
 
 ## 🧱 **Architecture Overview**
 
 | Layer              | Description                                                 |
-| ------------------ | ----------------------------------------------------------- |
-| **Core SDK**       | Core APIs for key derivation, signing, and GRPC interaction |
+| :----------------- | :---------------------------------------------------------- |
+| **Core SDK**       | Core APIs for key derivation, signing, and gRPC interaction |
 | **UI Components**  | SwiftUI-based popups and flows for ID App integration       |
 | **Configuration**  | Simple setup for network endpoints (Mainnet/Testnet)        |
 | **Error Handling** | Unified `SDKError` enum for predictable failure cases       |
