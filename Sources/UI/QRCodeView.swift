@@ -4,6 +4,7 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 #endif
 
+/// Displays a QR code generated from the provided text.
 public struct QRCodeView: View {
     let text: String
     private let context = CIContext()
@@ -32,6 +33,9 @@ public struct QRCodeView: View {
         }
     }
 
+    /// Create a QR `UIImage` from a string.
+    /// - Parameter string: Input to encode.
+    /// - Returns: Rasterized QR code or `nil` if generation fails.
     private func generateQRCode(from string: String) -> UIImage? {
         let data = Data(string.utf8)
         filter.setValue(data, forKey: "inputMessage")
