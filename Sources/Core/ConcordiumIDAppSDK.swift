@@ -196,6 +196,24 @@ extension ConcordiumIDAppSDK {
     }
 }
 
+// MARK: - Key Account Lookup
+
+extension ConcordiumIDAppSDK {
+    /// Retrieves all accounts that include the supplied public key on the specified network.
+    ///
+    /// - Parameters:
+    ///   - publicKey: Hex-encoded verify key to search for.
+    ///   - network: Concordium network to query.
+    /// - Returns: Array of key account metadata models sourced from the wallet proxy.
+    public static func getKeyAccounts(
+        publicKey: String,
+        network: Network
+    ) async throws -> [KeyAccount] {
+        guard !publicKey.isEmpty else { throw SDKError.invalidString }
+        return try await KeyAccountsService.fetchKeyAccounts(publicKey: publicKey, network: network)
+    }
+}
+
 // MARK: - Account Key Generation Utility
 
 extension ConcordiumIDAppSDK {
