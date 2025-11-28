@@ -17,25 +17,29 @@ import UIKit
 public struct ConcordiumIDAppPopup: View {
     private let walletConnectUri: String?
     private let onCreateAccount: (() async -> Void)?
+    private let onRecoverAccount: (() async -> Void)?
     private let walletConnectSessionTopic: String?
 
     @Environment(\.openURL) private var openURL
     @State private var isPresented: Bool = true
     @State private var isProcessingCreate: Bool = false
+    @State private var isProcessingRecover: Bool = false
 
     private init(
         walletConnectUri: String? = nil,
         onCreateAccount: (() async -> Void)? = nil,
+        onRecoverAccount: (() async -> Void)? = nil,
         walletConnectSessionTopic: String? = nil
     ) {
         self.walletConnectUri = walletConnectUri
         self.onCreateAccount = onCreateAccount
+        self.onRecoverAccount = onRecoverAccount
         self.walletConnectSessionTopic = walletConnectSessionTopic
     }
 
     // Determine if we should show the Provide case (account creation/recovery flow)
     private var shouldShowProvideCase: Bool {
-        return onCreateAccount != nil
+        return onCreateAccount != nil || onRecoverAccount != nil
     }
 
     /// Main content based on the selected flow.
@@ -93,18 +97,22 @@ public struct ConcordiumIDAppPopup: View {
      */
     public static func invokeIdAppActionsPopup(
         onCreateAccount: (() async -> Void)? = nil,
+        onRecoverAccount: (() async -> Void)? = nil,
         walletConnectSessionTopic: String? = nil
     ) -> ConcordiumIDAppPopup {
-        guard onCreateAccount != nil else {
-            fatalError("onCreateAccount handler must be provided")
+        // Check if at least one of the handlers is provided
+        guard onCreateAccount != nil || onRecoverAccount != nil else {
+            fatalError("At least one of the handlers must be provided")
         }
 
-        guard walletConnectSessionTopic != nil else {
+        // For account creation, walletConnectSessionTopic is required
+        if onCreateAccount != nil && walletConnectSessionTopic == nil {
             fatalError("Wallet Connect's session.topic is required for account creation")
         }
 
         return ConcordiumIDAppPopup(
             onCreateAccount: onCreateAccount,
+            onRecoverAccount: onRecoverAccount,
             walletConnectSessionTopic: walletConnectSessionTopic
         )
     }
@@ -155,14 +163,25 @@ public struct ConcordiumIDAppPopup: View {
                 ConnectingLine()
                 StepView(title: "Complete ID \nVerification", isActive: true)
                 ConnectingLine()
-                StepView(title: "Create Account", isActive: false)
+                StepView(title: stepTitle, isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
     }
 
+    private var stepTitle: String {
+        if onCreateAccount != nil && onRecoverAccount != nil {
+            return "Create / Recover\nAccount"
+        } else if onCreateAccount != nil {
+            return "Create Account"
+        } else {
+            return "Recover Account"
+        }
+    }
+
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
+            // Create Account Button
             if let onCreateAccount = onCreateAccount {
                 Button(action: { Task { await runCreate(onCreateAccount) } }, label: {
                     Text(isProcessingCreate ? "⏳ Please wait" : "Create New Account")
@@ -173,6 +192,37 @@ public struct ConcordiumIDAppPopup: View {
                         .cornerRadius(6)
                 })
                 .disabled(isProcessingCreate)
+            }
+
+            // Recover Account Button/Link
+            if let onRecoverAccount = onRecoverAccount {
+                if onCreateAccount != nil {
+                    // Show as secondary link when both options are available
+                    HStack(spacing: 4) {
+                        Text("Already have an account?")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.black)
+
+                        Button(action: { Task { await runRecover(onRecoverAccount) } }, label: {
+                            Text("Recover")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(#colorLiteral(red: 0.0, green: 0.282, blue: 0.655, alpha: 1)))
+                                .underline()
+                        })
+                        .disabled(isProcessingRecover)
+                    }
+                } else {
+                    // Show as primary button when only recovery is available
+                    Button(action: { Task { await runRecover(onRecoverAccount) } }, label: {
+                        Text(isProcessingRecover ? "⏳ Please wait" : "Recover Account")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Color.white)
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 2))
+                    })
+                    .disabled(isProcessingRecover)
+                }
             }
         }
     }
@@ -291,7 +341,7 @@ public struct ConcordiumIDAppPopup: View {
                 ConnectingLine()
                 StepView(title: "Complete ID\nVerification", isActive: false)
                 ConnectingLine()
-                StepView(title: "Create Account", isActive: false)
+                StepView(title: "Create / \n Recover Account", isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
@@ -310,7 +360,12 @@ public struct ConcordiumIDAppPopup: View {
     }
 
     private var actionText: String {
-        return "Create\n Account"
+        switch (onCreateAccount != nil, onRecoverAccount != nil) {
+        case (true, false): return "Create\n Account"
+        case (false, true): return "Recover\n Account"
+        case (true, true): return "Create / Recover\n Account"
+        default: return "Create / Recover\n Account"
+        }
     }
 
     private func runCreate(_ action: @escaping () async -> Void) async {
@@ -319,4 +374,9 @@ public struct ConcordiumIDAppPopup: View {
         isProcessingCreate = false
     }
 
+    private func runRecover(_ action: @escaping () async -> Void) async {
+        isProcessingRecover = true
+        await action()
+        isProcessingRecover = false
+    }
 }
