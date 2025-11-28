@@ -21,18 +21,23 @@ enum KeyAccountsService {
         }
 
         let (data, response): (Data, URLResponse)
+
         do {
             (data, response) = try await URLSession.shared.data(from: url)
         } catch {
             throw ConcordiumIDAppSDK.SDKError.networkFailure(error.localizedDescription)
         }
 
-        guard
-            let httpResponse = response as? HTTPURLResponse,
-            (200..<300).contains(httpResponse.statusCode)
-        else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            throw ConcordiumIDAppSDK.SDKError.networkFailure("wallet proxy responded with status \(status)")
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ConcordiumIDAppSDK.SDKError.networkFailure("Invalid server response")
+        }
+
+        if !(200..<300).contains(httpResponse.statusCode) {
+            if let apiError = try? decoder.decode(WalletProxyErrorResponse.self, from: data) {
+                throw ConcordiumIDAppSDK.SDKError.networkFailure(apiError.errorMessage)
+            } else {
+                throw ConcordiumIDAppSDK.SDKError.networkFailure("Unexpected error. Status: \(httpResponse.statusCode)")
+            }
         }
 
         do {
@@ -82,3 +87,27 @@ public struct KeyAccountPublicKey: Decodable {
     public let verifyKey: String
 }
 
+/// Represents an error response returned by the Concordium Wallet Proxy API.
+///
+/// The Wallet Proxy may return a structured JSON error when an invalid request
+/// is made — for example, if the supplied public key format is incorrect.
+/// This model captures that payload so it can be decoded and surfaced
+/// as a meaningful error to the calling application.
+///
+/// Example response:
+/// ```json
+/// {
+///   "error": 1,
+///   "errorMessage": "Parsing input failed: Invalid verify key: invalid bytestring size"
+/// }
+/// ```
+struct WalletProxyErrorResponse: Decodable {
+
+    /// A numeric error code provided by the wallet proxy.
+    /// This value may be useful for distinguishing different failure types programmatically.
+    let error: Int
+
+    /// Human-readable error message describing the failure cause.
+    /// Suitable for logging or displaying (with optional UX formatting).
+    let errorMessage: String
+}
