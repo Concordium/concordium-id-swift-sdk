@@ -48,21 +48,18 @@ enum KeyAccountsService {
     }
 
     private static func url(for publicKey: String, network: Network) -> URL? {
-        let networkSegment: String
+        let host: String
+
         switch network {
         case .mainnet:
-            networkSegment = "mainnet"
+            host = "https://wallet-proxy.mainnet.concordium.software/v0/keyAccounts/\(publicKey)"
         case .testnet:
-            networkSegment = "testnet"
+            host = "https://wallet-proxy.testnet.concordium.com/v0/keyAccounts/\(publicKey)"
         @unknown default:
-            networkSegment = "mainnet"
+            host = "https://wallet-proxy.mainnet.concordium.software/v0/keyAccounts/\(publicKey)"
         }
 
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "wallet-proxy.\(networkSegment).concordium.com"
-        components.path = "/v0/keyAccounts/\(publicKey)"
-        return components.url
+        return URL(string: host)
     }
 
     private static let decoder: JSONDecoder = {
