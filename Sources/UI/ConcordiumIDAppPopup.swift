@@ -214,7 +214,7 @@ public struct ConcordiumIDAppPopup: View {
                 } else {
                     // Show as primary button when only recovery is available
                     Button(action: { Task { await runRecover(onRecoverAccount) } }, label: {
-                        Text(isProcessingRecover ? "⏳ Please wait" : "Recover Account")
+                        Text("⏳ Please wait")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity, minHeight: 48)
@@ -341,7 +341,7 @@ public struct ConcordiumIDAppPopup: View {
                 ConnectingLine()
                 StepView(title: "Complete ID\nVerification", isActive: false)
                 ConnectingLine()
-                StepView(title: "Create / \n Recover Account", isActive: false)
+                StepView(title: "Create Account", isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
