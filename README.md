@@ -41,7 +41,7 @@ The SDK is distributed via **Swift Package Manager (SPM)**.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Concordium/concordium-id-swift-sdk.git", from: "1.0.0")
+    .package(url: "https://github.com/Concordium/concordium-id-swift-sdk.git", from: "1.1.0")
 ]
 ```
 
