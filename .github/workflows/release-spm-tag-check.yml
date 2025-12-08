@@ -9,6 +9,9 @@ jobs:
   validate-spm-tag:
     name: Validate SPM Release Tag
     runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Checkout repository
@@ -31,13 +34,13 @@ jobs:
           xcode-version: latest-stable
 
       - name: Swift Package Resolve
-        run: swift package resolve
+        run: swift package resolve --package-path ${{ github.workspace }}
 
       - name: Build
         run: |
           xcodebuild \
             -scheme concordium-id-swift-sdk \
-            -destination "platform=iOS Simulator,name=iPhone 15" \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Release \
             clean build
 
@@ -45,7 +48,7 @@ jobs:
         run: |
           xcodebuild \
             -scheme concordium-id-swift-sdk \
-            -destination "platform=iOS Simulator,name=iPhone 15" \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Release \
             test
 
