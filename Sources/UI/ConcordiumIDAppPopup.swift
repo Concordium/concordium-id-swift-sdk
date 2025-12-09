@@ -7,6 +7,8 @@ import SwiftUI
 import CoreImage.CIFilterBuiltins
 #if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
 /// Popup view for interacting with the Concordium ID App from a host application.
@@ -70,9 +72,25 @@ public struct ConcordiumIDAppPopup: View {
      This method is used to redirect the user to the ID App on mobile devices.
      */
     public static func openIdapp(walletConnectMobileUrl: String, walletConnectDesktopUrl: String? = nil) {
+#if canImport(UIKit)
         if let url = URL(string: walletConnectMobileUrl) {
             UIApplication.shared.open(url)
         }
+#elseif canImport(AppKit)
+        guard let urlString = ((walletConnectDesktopUrl?.isEmpty) != nil)
+                ? walletConnectMobileUrl
+                : walletConnectDesktopUrl else { return }
+
+if let url = URL(string: urlString) {
+    NSWorkspace.shared.open(url)
+}
+#else
+
+        // Fallback for other platforms
+        if let url = URL(string: walletConnectMobileUrl) {
+            // Use SwiftUI's openURL environment value if available
+        }
+#endif
     }
 
     /**
