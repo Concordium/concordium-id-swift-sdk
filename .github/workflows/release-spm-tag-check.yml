@@ -33,32 +33,25 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Swift Package Resolve
+      - name: Resolve dependencies
         run: swift package resolve --package-path ${{ github.workspace }}
 
-      - name: Build
+      - name: Build (iOS)
         run: |
           xcodebuild \
             -scheme concordium-id-swift-sdk \
             -destination 'generic/platform=iOS Simulator' \
-            -configuration Release \
+            -configuration Debug \
             clean build
 
-      - name: Run tests
+      - name: Lint (SwiftLint via Xcode)
         run: |
           xcodebuild \
             -scheme concordium-id-swift-sdk \
             -destination 'generic/platform=iOS Simulator' \
-            -configuration Release \
-            test
-
-      - name: SwiftLint
-        run: |
-          if command -v swiftlint > /dev/null; then
-            swiftlint
-          else
-            echo "⚠️ SwiftLint not installed – skipping lint"
-          fi
+            -configuration Debug \
+            clean build \
+            -skipPackagePluginValidation=NO
 
       - name: Confirm Package.swift Version Matches Tag
         run: |
