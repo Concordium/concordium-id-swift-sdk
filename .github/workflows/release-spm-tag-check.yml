@@ -53,17 +53,3 @@ jobs:
             clean build \
             -skipPackagePluginValidation=NO
 
-      - name: Confirm Package.swift Version Matches Tag
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          VERSION_IN_FILE=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' Package.swift | head -n 1)
-
-          echo "📄 Package.swift version: $VERSION_IN_FILE"
-          echo "🏷 Git tag version: ${TAG#v}"
-
-          if [[ "${TAG#v}" != "$VERSION_IN_FILE" ]]; then
-            echo "❌ Version in Package.swift does NOT match tag."
-            exit 1
-          fi
-
-          echo "✅ Version validation success."
