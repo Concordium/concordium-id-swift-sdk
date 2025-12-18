@@ -279,6 +279,100 @@ public struct RecoverAccountRequestMessage: Codable {
     }
 }
 
+/// Generic status returned by IDApp responses.
+public enum Status: String, Codable {
+    case success
+    case error
+}
+
+/// Error codes returned by the IDApp.
+public enum IDAppErrorCode: Int, Codable {
+    /// The specified account does not exist
+    case accountNotFound = 1
+
+    /// Failed to create the account
+    case accountCreationFailed = 2
+
+    /// An account with the publicKey already exists
+    case duplicateAccountCreationRequest = 7
+
+    /// An unexpected or unknown error occurred
+    case unknownError = 99
+}
+
+/// Error payload returned by IDApp.
+public struct IDAppError: Codable {
+    public let code: IDAppErrorCode
+    public let details: String?
+
+    public init(code: IDAppErrorCode, details: String? = nil) {
+        self.code = code
+        self.details = details
+    }
+}
+
+/// Success payload for create account response.
+public struct CreateAccountResponseMsgType: Codable {
+    public let serializedCredentialDeploymentTransaction: SerializedCredentialDeploymentDetails
+    public let accountAddress: String
+
+    public init(
+        serializedCredentialDeploymentTransaction: SerializedCredentialDeploymentDetails,
+        accountAddress: String
+    ) {
+        self.serializedCredentialDeploymentTransaction = serializedCredentialDeploymentTransaction
+        self.accountAddress = accountAddress
+    }
+}
+
+/// Typed response returned for create account flow.
+///
+/// This explicitly models success vs error instead of using `AnyCodable`.
+public enum CreateAccountCreationResponse: Codable {
+    case success(CreateAccountResponseMsgType)
+    case error(IDAppError)
+
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case message
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let status = try container.decode(Status.self, forKey: .status)
+
+        switch status {
+        case .success:
+            let payload = try container.decode(
+                CreateAccountResponseMsgType.self,
+                forKey: .message
+            )
+            self = .success(payload)
+
+        case .error:
+            let error = try container.decode(
+                IDAppError.self,
+                forKey: .message
+            )
+            self = .error(error)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        switch self {
+        case .success(let payload):
+            try container.encode(Status.success, forKey: .status)
+            try container.encode(payload, forKey: .message)
+
+        case .error(let error):
+            try container.encode(Status.error, forKey: .status)
+            try container.encode(error, forKey: .message)
+        }
+    }
+}
+
 extension ConcordiumIDAppSDK {
     private static var configuration: ConcordiumConfiguration?
 }

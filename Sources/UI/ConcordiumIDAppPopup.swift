@@ -9,6 +9,15 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 #endif
 
+
+// MARK: - IDApp Hosts
+
+public enum IDAppHost {
+    /// Mobile deep link host (iOS / Android)
+    public static let mobile = "concordiumidapp://"
+}
+
+
 /// Popup view for interacting with the Concordium ID App from a host application.
 ///
 /// Provides two modes:
@@ -239,7 +248,7 @@ public struct ConcordiumIDAppPopup: View {
                         .foregroundColor(.black)
 
                     if let walletConnectUri {
-                        QRCodeView(text: "\("IDAPP_HOSTS.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
+                        QRCodeView(text: "\("IDAppHost.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
                             .frame(width: 200, height: 200)
                     }
                     Button(action: {
