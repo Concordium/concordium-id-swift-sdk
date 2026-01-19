@@ -248,7 +248,9 @@ public struct ConcordiumIDAppPopup: View {
                         .foregroundColor(.black)
 
                     if let walletConnectUri {
-                        QRCodeView(text: "\("IDAppHost.mobile")wallet-connect?encodedUri=\(walletConnectUri)")
+                        let qrText = "concordiumidapp://wallet-connect?encodedUri=\(walletConnectUri)"
+                    
+                        QRCodeView(text: qrText)
                             .frame(width: 200, height: 200)
                     }
                     Button(action: {
