@@ -20,6 +20,7 @@ public struct ConcordiumIDAppPopup: View {
     private let walletConnectSessionTopic: String?
 
     @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
     @State private var isPresented: Bool = true
     @State private var isProcessingCreate: Bool = false
 
@@ -40,17 +41,19 @@ public struct ConcordiumIDAppPopup: View {
 
     /// Main content based on the selected flow.
     public var body: some View {
-        VStack {
-            Group {
-                if shouldShowProvideCase {
-                    provideCasePopup
-                } else {
-                    popupBox
+        if isPresented {
+            VStack {
+                Group {
+                    if shouldShowProvideCase {
+                        provideCasePopup
+                    } else {
+                        popupBox
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(alignment: .top)
     }
 
     // MARK: - Static Methods (JavaScript API Compatibility)
@@ -305,6 +308,7 @@ public struct ConcordiumIDAppPopup: View {
         Button(action: {
             ConcordiumIDAppPopup.closePopup()
             isPresented = false
+            dismiss()
         }, label: {
             Text("x").font(.system(size: 24)).foregroundColor(.gray)
         })
