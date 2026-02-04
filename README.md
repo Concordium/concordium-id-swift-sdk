@@ -33,7 +33,7 @@ The SDK is distributed via **Swift Package Manager (SPM)**.
 2. Enter the repository URL:
 
    ```bash
-   https://github.com/your-org/concordium-id-swift-sdk.git
+   https://github.com/Concordium/concordium-id-swift-sdk.git
    ```
 3. Select **Up to Next Major Version** and add the package to your target.
 
