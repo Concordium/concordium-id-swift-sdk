@@ -1,7 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 /// A single step indicator with title and active state.
 struct StepView: View {
