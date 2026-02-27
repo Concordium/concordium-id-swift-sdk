@@ -26,25 +26,32 @@ public enum IDAppHost {
 public struct ConcordiumIDAppPopup: View {
     private let walletConnectUri: String?
     private let onCreateAccount: (() async -> Void)?
+    private let onGenerateProof: (() async -> Void)?
     private let walletConnectSessionTopic: String?
+    private let requestMethod: IDAppRequestMethod
 
     @Environment(\.openURL) private var openURL
     @State private var isPresented: Bool = true
     @State private var isProcessingCreate: Bool = false
+    @State private var isProcessingProof: Bool = false
 
     private init(
         walletConnectUri: String? = nil,
         onCreateAccount: (() async -> Void)? = nil,
-        walletConnectSessionTopic: String? = nil
+        onGenerateProof: (() async -> Void)? = nil,
+        walletConnectSessionTopic: String? = nil,
+        requestMethod: IDAppRequestMethod = .requestAccountsV1
     ) {
         self.walletConnectUri = walletConnectUri
         self.onCreateAccount = onCreateAccount
+        self.onGenerateProof = onGenerateProof
         self.walletConnectSessionTopic = walletConnectSessionTopic
+        self.requestMethod = requestMethod
     }
 
     // Determine if we should show the Provide case (account creation/recovery flow)
     private var shouldShowProvideCase: Bool {
-        return onCreateAccount != nil
+        return onCreateAccount != nil || onGenerateProof != nil
     }
 
     /// Main content based on the selected flow.
@@ -104,17 +111,43 @@ public struct ConcordiumIDAppPopup: View {
         onCreateAccount: (() async -> Void)? = nil,
         walletConnectSessionTopic: String? = nil
     ) -> ConcordiumIDAppPopup {
-        guard onCreateAccount != nil else {
-            fatalError("onCreateAccount handler must be provided")
+        return invokeIdAppActionsPopup(
+            requestMethod: .requestAccountsV1,
+            onCreateAccount: onCreateAccount,
+            onGenerateProof: nil,
+            walletConnectSessionTopic: walletConnectSessionTopic
+        )
+    }
+
+    /**
+     Shows the popup for request-method based account actions.
+     */
+    public static func invokeIdAppActionsPopup(
+        requestMethod: IDAppRequestMethod,
+        onCreateAccount: (() async -> Void)? = nil,
+        onGenerateProof: (() async -> Void)? = nil,
+        walletConnectSessionTopic: String? = nil
+    ) -> ConcordiumIDAppPopup {
+        guard walletConnectSessionTopic != nil else {
+            fatalError("Wallet Connect's session.topic is required for popup actions")
         }
 
-        guard walletConnectSessionTopic != nil else {
-            fatalError("Wallet Connect's session.topic is required for account creation")
+        switch requestMethod {
+        case .requestAccountsV1:
+            guard onCreateAccount != nil else {
+                fatalError("onCreateAccount handler must be provided for request_accounts_v1")
+            }
+        case .requestVerifiablePresentationV1:
+            guard onGenerateProof != nil else {
+                fatalError("onGenerateProof handler must be provided for request_verifiable_presentation_v1")
+            }
         }
 
         return ConcordiumIDAppPopup(
             onCreateAccount: onCreateAccount,
-            walletConnectSessionTopic: walletConnectSessionTopic
+            onGenerateProof: onGenerateProof,
+            walletConnectSessionTopic: walletConnectSessionTopic,
+            requestMethod: requestMethod
         )
     }
 
@@ -164,7 +197,7 @@ public struct ConcordiumIDAppPopup: View {
                 ConnectingLine()
                 StepView(title: "Complete ID \nVerification", isActive: true)
                 ConnectingLine()
-                StepView(title: "Create Account", isActive: false)
+                StepView(title: actionStepTitle, isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
@@ -172,7 +205,18 @@ public struct ConcordiumIDAppPopup: View {
 
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
-            if let onCreateAccount = onCreateAccount {
+            if requestMethod == .requestVerifiablePresentationV1,
+               let onGenerateProof = onGenerateProof {
+                Button(action: { Task { await runGenerateProof(onGenerateProof) } }, label: {
+                    Text(isProcessingProof ? "⏳ Please wait" : "Generate Proof")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Color(#colorLiteral(red: 0.0, green: 0.290, blue: 0.576, alpha: 1)))
+                        .cornerRadius(6)
+                })
+                .disabled(isProcessingProof)
+            } else if let onCreateAccount = onCreateAccount {
                 Button(action: { Task { await runCreate(onCreateAccount) } }, label: {
                     Text(isProcessingCreate ? "⏳ Please wait" : "Create New Account")
                         .font(.system(size: 16, weight: .semibold))
@@ -188,7 +232,7 @@ public struct ConcordiumIDAppPopup: View {
 
     private var authenticationCodeSection: some View {
         VStack(spacing: 16) {
-            Text("To Create an Account, match the code \n below in the [ID App]")
+            Text(authenticationCodeTitle)
                 .font(.system(size: 13, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -321,13 +365,42 @@ public struct ConcordiumIDAppPopup: View {
     }
 
     private var actionText: String {
-        return "Create\n Account"
+        switch requestMethod {
+        case .requestVerifiablePresentationV1:
+            return "Generate\nProof"
+        case .requestAccountsV1:
+            return "Create\nAccount"
+        }
+    }
+
+    private var actionStepTitle: String {
+        switch requestMethod {
+        case .requestVerifiablePresentationV1:
+            return "Generate Proof"
+        case .requestAccountsV1:
+            return "Create Account"
+        }
+    }
+
+    private var authenticationCodeTitle: String {
+        switch requestMethod {
+        case .requestVerifiablePresentationV1:
+            return "To Generate Proof, match the code \n below in the [ID App]"
+        case .requestAccountsV1:
+            return "To Create an Account, match the code \n below in the [ID App]"
+        }
     }
 
     private func runCreate(_ action: @escaping () async -> Void) async {
         isProcessingCreate = true
         await action()
         isProcessingCreate = false
+    }
+
+    private func runGenerateProof(_ action: @escaping () async -> Void) async {
+        isProcessingProof = true
+        await action()
+        isProcessingProof = false
     }
 
 }

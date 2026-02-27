@@ -117,15 +117,24 @@ ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
 )
 ```
 
-### **Create / Recover Account Popup**
+### **Create Account Popup**
 
 ```swift
 ConcordiumIDAppPopup.invokeIdAppActionsPopup(
     onCreateAccount: {
-        // async create flow
+        // async create account flow
     },
-    onRecoverAccount: {
-        // async recover flow
+    walletConnectSessionTopic: "ABCD"
+)
+```
+
+### **Generate Proof Popup**
+
+```swift
+ConcordiumIDAppPopup.invokeIdAppActionsPopup(
+    requestMethod: .requestVerifiablePresentationV1,
+    onGenerateProof: {
+        // async verifiable presentation proof flow
     },
     walletConnectSessionTopic: "ABCD"
 )
