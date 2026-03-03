@@ -9,6 +9,15 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 #endif
 
+
+// MARK: - IDApp Hosts
+
+public enum IDAppHost {
+    /// Mobile deep link host (iOS / Android)
+    public static let mobile = "concordiumidapp://"
+}
+
+
 /// Popup view for interacting with the Concordium ID App from a host application.
 ///
 /// Provides two modes:
