@@ -326,6 +326,28 @@ public struct IDAppError: Codable {
     }
 }
 
+/// Serialized credential deployment details returned by IDApp.
+///
+/// The payload is typically a serialized string representation of the
+/// credential deployment transaction.
+public struct SerializedCredentialDeploymentDetails: Codable {
+    public let value: String
+
+    public init(value: String) {
+        self.value = value
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.value = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+    }
+}
+
 /// Success payload for create account response.
 public struct CreateAccountResponseMsgType: Codable {
     public let serializedCredentialDeploymentTransaction: SerializedCredentialDeploymentDetails
