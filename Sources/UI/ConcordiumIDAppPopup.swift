@@ -248,7 +248,7 @@ public struct ConcordiumIDAppPopup: View {
                             .frame(width: 200, height: 200)
                     }
                     Button(action: {
-                        // Your action here
+                        openIdAppFromPopup()
                     }, label: {
                         Text("Open {ID App}")
                             .font(.system(size: 16, weight: .semibold))
@@ -317,6 +317,18 @@ public struct ConcordiumIDAppPopup: View {
 
     private var actionText: String {
         return "Create\n Account"
+    }
+
+    private func openIdAppFromPopup() {
+        guard let walletConnectUri, !walletConnectUri.isEmpty else {
+            return
+        }
+
+        let encodedUri = walletConnectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? walletConnectUri
+        let urlString = "concordiumidapp://wallet-connect?encodedUri=\(encodedUri)"
+        if let url = URL(string: urlString) {
+            openURL(url)
+        }
     }
 
     private func runCreate(_ action: @escaping () async -> Void) async {
