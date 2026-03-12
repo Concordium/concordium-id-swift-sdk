@@ -1,0 +1,15 @@
+# Swift Package Manager build and cache
+.build/
+.swiftpm/
+Package.resolved.userstate
+
+# SwiftPM index-build transient state
+.build/index-build/
+.build/repositories/
+.build/.lock
+
+# Xcode user-specific files
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate

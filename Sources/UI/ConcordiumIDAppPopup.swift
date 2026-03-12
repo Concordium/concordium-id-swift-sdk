@@ -30,7 +30,6 @@ public struct ConcordiumIDAppPopup: View {
     private let walletConnectSessionTopic: String?
     private let requestMethod: IDAppRequestMethod
 
-    @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @State private var isPresented: Bool = true
     @State private var isProcessingCreate: Bool = false
@@ -301,7 +300,13 @@ public struct ConcordiumIDAppPopup: View {
                             .frame(width: 200, height: 200)
                     }
                     Button(action: {
-                        // Your action here
+                        guard let walletConnectUri, !walletConnectUri.isEmpty else {
+                            return
+                        }
+
+                        let encodedUri = walletConnectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? walletConnectUri
+                        let urlString = "\(IDAppHost.mobile)wallet-connect?encodedUri=\(encodedUri)"
+                        ConcordiumIDAppPopup.openIdapp(walletConnectMobileUrl: urlString)
                     }, label: {
                         Text("Open {ID App}")
                             .font(.system(size: 16, weight: .semibold))
