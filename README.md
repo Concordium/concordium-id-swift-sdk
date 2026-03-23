@@ -117,6 +117,15 @@ ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
 )
 ```
 
+Optional: pass `requestMethod` to show Generate Proof in the stepper.
+
+```swift
+ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
+    walletConnectUri: "wc:...@2?...",
+    requestMethod: .requestVerifiablePresentationV1
+)
+```
+
 ### **Create Account Popup**
 
 ```swift
