@@ -154,7 +154,7 @@ public struct ConcordiumIDAppPopup: View {
         switch requestMethod {
         case .requestAccountsV1:
             guard onCreateAccount != nil else {
-                fatalError("onCreateAccount handler must be provided for request_accounts_v1")
+                fatalError("onCreateAccount handler must be provided for create_account")
             }
         case .requestVerifiablePresentationV1:
             guard onGenerateProof != nil else {
