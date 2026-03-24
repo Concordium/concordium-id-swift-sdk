@@ -86,7 +86,7 @@ struct AppStoreButtonView: View {
 
     var body: some View {
         Button(action: {
-            if let url = URL(string: "https://apps.apple.com/app/concordium-id/id123456789") {
+            if let url = URL(string: "https://apps.apple.com/us/app/concordium-id/id6746754485") {
                 openURL(url)
             }
         }, label: {
