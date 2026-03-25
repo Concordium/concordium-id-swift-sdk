@@ -106,6 +106,23 @@ public struct ConcordiumIDAppPopup: View {
     }
 
     /**
+     Shows the QR code popup with an explicit request method.
+     */
+    public static func invokeIdAppDeepLinkPopup(
+        walletConnectUri: String,
+        requestMethod: IDAppRequestMethod
+    ) -> ConcordiumIDAppPopup {
+        guard !walletConnectUri.isEmpty else {
+            fatalError("ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup() requires a valid walletConnectUri")
+        }
+
+        return ConcordiumIDAppPopup(
+            walletConnectUri: walletConnectUri,
+            requestMethod: requestMethod
+        )
+    }
+
+    /**
      Shows the account creation/recovery popup.
      This function creates a popup that allows users to create new accounts or recover existing ones.
      */
@@ -137,7 +154,7 @@ public struct ConcordiumIDAppPopup: View {
         switch requestMethod {
         case .requestAccountsV1:
             guard onCreateAccount != nil else {
-                fatalError("onCreateAccount handler must be provided for request_accounts_v1")
+                fatalError("onCreateAccount handler must be provided for create_account")
             }
         case .requestVerifiablePresentationV1:
             guard onGenerateProof != nil else {
@@ -152,6 +169,7 @@ public struct ConcordiumIDAppPopup: View {
             requestMethod: requestMethod
         )
     }
+
 
     // MARK: - Provide Case (Account Creation/Recovery Flow)
     private var provideCasePopup: some View {
@@ -354,7 +372,7 @@ public struct ConcordiumIDAppPopup: View {
                 ConnectingLine()
                 StepView(title: "Complete ID\nVerification", isActive: false)
                 ConnectingLine()
-                StepView(title: "Create Account", isActive: false)
+                StepView(title: actionStepTitle, isActive: false)
             }
             .frame(maxWidth: .infinity)
         }
