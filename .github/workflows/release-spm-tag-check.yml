@@ -1,0 +1,55 @@
+name: Release Validation
+
+on:
+  push:
+    tags:
+      - 'v*'  # Only run when pushing semantic style tags (ex: v1.0.0)
+
+jobs:
+  validate-spm-tag:
+    name: Validate SPM Release Tag
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Required to check tags
+
+      - name: Validate tag format
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Tag '$TAG' is not SemVer formatted (vX.Y.Z)"
+            exit 1
+          fi
+          echo "✅ Valid tag format: $TAG"
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Resolve dependencies
+        run: swift package resolve --package-path ${{ github.workspace }}
+
+      - name: Build (iOS)
+        run: |
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build
+
+      - name: Lint (SwiftLint via Xcode)
+        run: |
+          xcodebuild \
+            -scheme concordium-id-swift-sdk \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            clean build \
+            -skipPackagePluginValidation=NO
+
