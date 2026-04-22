@@ -427,18 +427,6 @@ public struct ConcordiumIDAppPopup: View {
         }
     }
 
-    private func openIdAppFromPopup() {
-        guard let walletConnectUri, !walletConnectUri.isEmpty else {
-            return
-        }
-
-        let encodedUri = walletConnectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? walletConnectUri
-        let urlString = "concordiumidapp://wallet-connect?encodedUri=\(encodedUri)"
-        if let url = URL(string: urlString) {
-            openURL(url)
-        }
-    }
-
     private func runCreate(_ action: @escaping () async -> Void) async {
         isProcessingCreate = true
         await action()
