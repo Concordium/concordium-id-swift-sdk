@@ -279,6 +279,182 @@ public struct RecoverAccountRequestMessage: Codable {
     }
 }
 
+/// Generic status returned by IDApp responses.
+public enum Status: String, Codable {
+    case success
+    case error
+}
+
+/// Error codes returned by the IDApp.
+public enum IDAppErrorCode: Int, Codable {
+    /// The specified account does not exist
+    case accountNotFound = 1
+
+    /// Failed to create the account
+    case accountCreationFailed = 2
+
+    /// Network error while calling IDApp or backend
+    case networkError = 3
+
+    /// Request payload is invalid
+    case invalidInput = 4
+
+    /// Request is unauthorized
+    case unauthorized = 5
+
+    /// Request timed out
+    case timeout = 6
+
+    /// An account with the publicKey already exists
+    case duplicateAccountCreationRequest = 7
+
+    /// User rejected the request in IDApp
+    case requestRejected = 8
+
+    /// An unexpected or unknown error occurred
+    case unknownError = 99
+}
+
+/// Error payload returned by IDApp.
+public struct IDAppError: Codable {
+    public let code: IDAppErrorCode
+    public let details: String?
+
+    public init(code: IDAppErrorCode, details: String? = nil) {
+        self.code = code
+        self.details = details
+    }
+}
+
+/// Serialized credential deployment details returned by IDApp.
+///
+/// The payload is typically a serialized string representation of the
+/// credential deployment transaction.
+public struct SerializedCredentialDeploymentDetails: Codable {
+    public let value: String
+
+    public init(value: String) {
+        self.value = value
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.value = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+    }
+}
+
+/// Success payload for create account response.
+public struct CreateAccountResponseMsgType: Codable {
+    public let serializedCredentialDeploymentTransaction: SerializedCredentialDeploymentDetails
+    public let accountAddress: String
+
+    public init(
+        serializedCredentialDeploymentTransaction: SerializedCredentialDeploymentDetails,
+        accountAddress: String
+    ) {
+        self.serializedCredentialDeploymentTransaction = serializedCredentialDeploymentTransaction
+        self.accountAddress = accountAddress
+    }
+}
+
+/// Typed message payload for create account flow responses.
+public enum CreateAccountCreationResponseMessage: Codable {
+    case success(CreateAccountResponseMsgType)
+    case error(IDAppError)
+
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case message
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let status = try container.decode(Status.self, forKey: .status)
+
+        switch status {
+        case .success:
+            let payload = try container.decode(
+                CreateAccountResponseMsgType.self,
+                forKey: .message
+            )
+            self = .success(payload)
+
+        case .error:
+            let error = try container.decode(
+                IDAppError.self,
+                forKey: .message
+            )
+            self = .error(error)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        switch self {
+        case .success(let payload):
+            try container.encode(Status.success, forKey: .status)
+            try container.encode(payload, forKey: .message)
+
+        case .error(let error):
+            try container.encode(Status.error, forKey: .status)
+            try container.encode(error, forKey: .message)
+        }
+    }
+}
+
+/// Response returned for create account flow.
+public struct CreateAccountCreationResponse: Codable {
+    public let status: Status
+    public let message: CreateAccountCreationResponseMessage
+
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case message
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let status = try container.decode(Status.self, forKey: .status)
+
+        self.status = status
+        switch status {
+        case .success:
+            let payload = try container.decode(
+                CreateAccountResponseMsgType.self,
+                forKey: .message
+            )
+            self.message = .success(payload)
+
+        case .error:
+            let error = try container.decode(
+                IDAppError.self,
+                forKey: .message
+            )
+            self.message = .error(error)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(status, forKey: .status)
+
+        switch message {
+        case .success(let payload):
+            try container.encode(payload, forKey: .message)
+
+        case .error(let error):
+            try container.encode(error, forKey: .message)
+        }
+    }
+}
+
 extension ConcordiumIDAppSDK {
     private static var configuration: ConcordiumConfiguration?
 }

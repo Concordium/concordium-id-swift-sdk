@@ -117,15 +117,33 @@ ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
 )
 ```
 
-### **Create / Recover Account Popup**
+Optional: pass `requestMethod` to show Generate Proof in the stepper.
+
+```swift
+ConcordiumIDAppPopup.invokeIdAppDeepLinkPopup(
+    walletConnectUri: "wc:...@2?...",
+    requestMethod: .requestVerifiablePresentationV1
+)
+```
+
+### **Create Account Popup**
 
 ```swift
 ConcordiumIDAppPopup.invokeIdAppActionsPopup(
     onCreateAccount: {
-        // async create flow
+        // async create account flow
     },
-    onRecoverAccount: {
-        // async recover flow
+    walletConnectSessionTopic: "ABCD"
+)
+```
+
+### **Generate Proof Popup**
+
+```swift
+ConcordiumIDAppPopup.invokeIdAppActionsPopup(
+    requestMethod: .requestVerifiablePresentationV1,
+    onGenerateProof: {
+        // async verifiable presentation proof flow
     },
     walletConnectSessionTopic: "ABCD"
 )
