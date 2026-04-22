@@ -24,6 +24,14 @@ public struct ConcordiumIDAppPopup: View {
     @State private var isPresented: Bool = true
     @State private var isProcessingCreate: Bool = false
 
+        private var isCompactScreen: Bool {
+    #if canImport(UIKit)
+        UIScreen.main.bounds.height <= 780
+    #else
+        false
+    #endif
+        }
+
     private init(
         walletConnectUri: String? = nil,
         onCreateAccount: (() async -> Void)? = nil,
@@ -235,17 +243,18 @@ public struct ConcordiumIDAppPopup: View {
                 stepHeader
 
                 // Main Content
-                VStack(spacing: 32) {
-                    Text("Please follow and complete the \n account setup in [ID App].")
+                VStack(spacing: isCompactScreen ? 20 : 32) {
+                    Text("Please follow and complete the\naccount setup in [ID App].")
                         .font(.system(size: 16, weight: .bold))
-                        .multilineTextAlignment(.leading)
+                        .multilineTextAlignment(.center)
                         .foregroundColor(.black)
+                        .lineLimit(2)
 
                     if let walletConnectUri {
                         let qrText = "concordiumidapp://wallet-connect?encodedUri=\(walletConnectUri)"
                     
                         QRCodeView(text: qrText)
-                            .frame(width: 200, height: 200)
+                            .frame(width: isCompactScreen ? 160 : 200, height: isCompactScreen ? 160 : 200)
                     }
                     Button(action: {
                         openIdAppFromPopup()
@@ -257,10 +266,10 @@ public struct ConcordiumIDAppPopup: View {
                             .background(Color(#colorLiteral(red: 0.066, green: 0.262, blue: 0.655, alpha: 1)))
                             .cornerRadius(8)
                     })
-                    .frame(width: 320)
+                    .frame(maxWidth: .infinity)
                 }
                 .frame(maxHeight: .infinity)
-                .padding(.top, -67)
+                .padding(.top, isCompactScreen ? 8 : 16)
             }
             .frame(maxHeight: .infinity)
             .padding(20)
